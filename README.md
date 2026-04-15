@@ -34,9 +34,9 @@ career-kg-project/
 │   ├── data.json            # 知识图谱原始数据 (当前数据源)
 │   ├── requirements.txt     # Python 依赖清单
 │   └── Dockerfile           # 后端容器构建脚本
-├── grapth_build/
-│   ├── src/
-│   └── data/     
+├── grapth_build/            # 构建知识图谱
+│   ├── src/                 # 用于构建图谱的代码
+│   └── data/                # 搜集的职业规划数据集
 ├── docker-compose.yml       # 服务编排配置
 ├── .gitignore               # Git 忽略规则
 └── README.md                # 项目说明文档
