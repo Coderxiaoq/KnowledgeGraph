@@ -3,7 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "echo \"Frontend placeholder\"",
-    "build": "echo \"Frontend placeholder\""
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
   }
 }
