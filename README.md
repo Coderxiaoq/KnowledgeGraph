@@ -13,7 +13,7 @@ $env:ZAI_API_KEY="自己的api_key"
 ## 打开neo4j
 下载Neo4j Desktop
 创建实例，点击左侧···图标，点击plugins，下载APOC插件，启动实例
-打开web界连接
+打开web界面连接
 ```bash
 http://localhost:7474
 ```
