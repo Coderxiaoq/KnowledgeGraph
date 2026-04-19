@@ -1,0 +1,188 @@
+{
+    "entities": [
+        {
+            "id": "Apple_Inc",
+            "type": "公司",
+            "description": "苹果公司，美国跨国科技公司",
+            "kg_id": "LOCAL_be1e8ef1",
+            "name": "Apple_Inc"
+        },
+        {
+            "id": "USA",
+            "type": "国家",
+            "description": "美国",
+            "kg_id": "LOCAL_e3c1628d",
+            "name": "USA"
+        },
+        {
+            "id": "California",
+            "type": "州",
+            "description": "美国加州",
+            "kg_id": "LOCAL_5e7ea3fd",
+            "name": "California"
+        },
+        {
+            "id": "Cupertino",
+            "type": "城市",
+            "description": "库比蒂诺，位于美国加州",
+            "kg_id": "LOCAL_55e3a010",
+            "name": "Cupertino"
+        },
+        {
+            "id": "Silicon_Valley",
+            "type": "地区",
+            "description": "硅谷",
+            "kg_id": "LOCAL_9294e9d6",
+            "name": "Silicon_Valley"
+        },
+        {
+            "id": "Steve_Jobs",
+            "type": "人物",
+            "description": "史蒂夫·乔布斯，苹果公司联合创始人",
+            "kg_id": "LOCAL_e24711f8",
+            "name": "Steve_Jobs"
+        },
+        {
+            "id": "Steve_Wozniak",
+            "type": "人物",
+            "description": "斯蒂夫·盖瑞·沃兹尼亚克，苹果公司联合创始人",
+            "kg_id": "LOCAL_4254b8c6",
+            "name": "Steve_Wozniak"
+        },
+        {
+            "id": "Computer",
+            "type": "产品",
+            "description": "电脑",
+            "kg_id": "LOCAL_5f0e3387",
+            "name": "Computer"
+        },
+        {
+            "id": "Phone",
+            "type": "产品",
+            "description": "手机",
+            "kg_id": "LOCAL_5f77ac0f",
+            "name": "Phone"
+        },
+        {
+            "id": "Wearable_Device",
+            "type": "产品",
+            "description": "穿戴设备",
+            "kg_id": "LOCAL_c5277aea",
+            "name": "Wearable_Device"
+        },
+        {
+            "id": "Software",
+            "type": "产品",
+            "description": "计算机软件",
+            "kg_id": "LOCAL_56f6485f",
+            "name": "Software"
+        },
+        {
+            "id": "Online_Service",
+            "type": "服务",
+            "description": "在线服务",
+            "kg_id": "LOCAL_a7d12aef",
+            "name": "Online_Service"
+        },
+        {
+            "id": "FY2023_Revenue",
+            "type": "财务数据",
+            "description": "2023财年收入3832.85亿美元",
+            "kg_id": "LOCAL_6466bf89",
+            "name": "FY2023_Revenue"
+        }
+    ],
+    "relations": [
+        {
+            "source": "Apple_Inc",
+            "target": "USA",
+            "relation_type": "位于",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_e3c1628d"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Cupertino",
+            "relation_type": "总部位于",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_55e3a010"
+        },
+        {
+            "source": "Cupertino",
+            "target": "California",
+            "relation_type": "位于",
+            "source_kg_id": "LOCAL_55e3a010",
+            "target_kg_id": "LOCAL_5e7ea3fd"
+        },
+        {
+            "source": "California",
+            "target": "USA",
+            "relation_type": "属于",
+            "source_kg_id": "LOCAL_5e7ea3fd",
+            "target_kg_id": "LOCAL_e3c1628d"
+        },
+        {
+            "source": "Cupertino",
+            "target": "Silicon_Valley",
+            "relation_type": "位于",
+            "source_kg_id": "LOCAL_55e3a010",
+            "target_kg_id": "LOCAL_9294e9d6"
+        },
+        {
+            "source": "Steve_Jobs",
+            "target": "Apple_Inc",
+            "relation_type": "创立",
+            "source_kg_id": "LOCAL_e24711f8",
+            "target_kg_id": "LOCAL_be1e8ef1"
+        },
+        {
+            "source": "Steve_Wozniak",
+            "target": "Apple_Inc",
+            "relation_type": "创立",
+            "source_kg_id": "LOCAL_4254b8c6",
+            "target_kg_id": "LOCAL_be1e8ef1"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "FY2023_Revenue",
+            "relation_type": "2023财年收入",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_6466bf89"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Computer",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_5f0e3387"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Phone",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_5f77ac0f"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Wearable_Device",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_c5277aea"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Software",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_56f6485f"
+        },
+        {
+            "source": "Apple_Inc",
+            "target": "Online_Service",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_be1e8ef1",
+            "target_kg_id": "LOCAL_a7d12aef"
+        }
+    ]
+}
