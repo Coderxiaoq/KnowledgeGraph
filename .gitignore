@@ -1,1 +1,10 @@
+<<<<<<< HEAD
 .vscode/
+=======
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+>>>>>>> 310f47c7b41c77dd4754ac5b000996b70c0d5dc4
