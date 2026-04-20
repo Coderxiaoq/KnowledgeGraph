@@ -13,8 +13,8 @@ from zai import ZhipuAiClient
 zai_client = ZhipuAiClient(api_key=os.getenv("ZAI_API_KEY"))
 
 # 文件路径配置
-INPUT_FOLDER = "./input_texts"    # 存放待处理文本的文件夹
-OUTPUT_FOLDER = "./processed_kg"  # 存放生成的 JSON 数据的文件夹
+INPUT_FOLDER = "../data/input_texts"    # 存放待处理文本的文件夹
+OUTPUT_FOLDER = "../data/processed_kg"  # 存放生成的 JSON 数据的文件夹
 
 # 确保文件夹存在
 os.makedirs(INPUT_FOLDER, exist_ok=True)
@@ -23,6 +23,10 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 # ==========================================
 # 工具定义与逻辑区
 # ==========================================
+#这是一个符合ZhipuAI函数调用规范的列表。定义了模型必须输出的 JSON 结构。
+#entities: 实体数组。每个实体包含 id（名称）、type（类型，如人物/地点）、description（简述）。
+#relations: 关系数组。每个关系包含 source（起点）、target（终点）、relation_type（关系类型，如“出生于”）。
+
 kg_extraction_tools =[{
     "type": "function", "function": {
         "name": "extract_knowledge_graph",

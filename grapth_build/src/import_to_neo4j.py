@@ -11,7 +11,7 @@ NEO4J_USER = "neo4j"
 NEO4J_PASSWORD = "neo4j_kg" 
 
 # 存放生成的 JSON 数据的文件夹（从这里读取）
-OUTPUT_FOLDER = "./processed_kg"
+OUTPUT_FOLDER = "../data/processed_kg"
 
 # ==========================================
 # 存储逻辑区
