@@ -1,22 +1,28 @@
 # 知识图谱构建
-## 环境准备
+## 1.环境准备
 ```bash
 pip install -r requirements.txt
 ```
-## 提取实体
+## 2.提取实体
 ### APIkeys导入
+该项目用的是智谱清言的模型，注册有免费的tokens，地址https://bigmodel.cn/
+在命令行运行以下指令
 ```bash
-python
 $env:ZAI_API_KEY="自己的api_key"
 ```
+然后就可以运行extractEntities.py了
 
-## 打开neo4j
+## 3.打开neo4j
 下载Neo4j Desktop
 创建实例，点击左侧···图标，点击plugins，下载APOC插件，启动实例
-打开web界面连接
+修改extractEntities.py中neo4j的配置，打开web界面连接
 ```bash
+NEO4J_URI = "neo4j://127.0.0.1:7687(默认)"
+NEO4J_USER = "neo4j(默认)"
+NEO4J_PASSWORD = "实例的密码" 
 http://localhost:7474
 ```
+然后就可以运行import_to_neo4j.py了
 
 ## API
 
@@ -71,6 +77,13 @@ http://localhost:7474
 ---
 
 # 知识图谱后端 API 接口规范 (v1.0.0)
+
+运行api.py
+```bash
+NEO4J_URI = "neo4j://127.0.0.1:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASSWORD = "自己的密码"
+```
 
 - **Base URL:** `http://127.0.0.1:8000`
 - **Swagger UI:** [/docs](http://127.0.0.1:8000/docs)

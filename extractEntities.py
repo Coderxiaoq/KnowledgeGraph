@@ -5,18 +5,12 @@ import requests
 import re
 from datetime import datetime
 from zai import ZhipuAiClient
-from neo4j import GraphDatabase
 
 # ==========================================
 # 配置区
 # ==========================================
 # 初始化客户端 (确保环境变量里有 ZAI_API_KEY)
 zai_client = ZhipuAiClient(api_key=os.getenv("ZAI_API_KEY"))
-
-# Neo4j 数据库连接信息
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "neo4j_kg" 
 
 # 文件路径配置
 INPUT_FOLDER = "./input_texts"    # 存放待处理文本的文件夹
@@ -27,16 +21,16 @@ os.makedirs(INPUT_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # ==========================================
-# 工具定义与逻辑区 (保持原逻辑不变)
+# 工具定义与逻辑区
 # ==========================================
-kg_extraction_tools = [{
+kg_extraction_tools =[{
     "type": "function", "function": {
         "name": "extract_knowledge_graph",
         "description": "从非结构化文本中提取实体和关系",
         "parameters": {
             "type": "object",
             "properties": {
-                "entities": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "type": {"type": "string"}, "description": {"type": "string"}}, "required": ["id", "type"]}},
+                "entities": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "type": {"type": "string"}, "description": {"type": "string"}}, "required":["id", "type"]}},
                 "relations": {"type": "array", "items": {"type": "object", "properties": {"source": {"type": "string"}, "target": {"type": "string"}, "relation_type": {"type": "string"}}, "required":["source", "target", "relation_type"]}}
             }, "required": ["entities", "relations"]
         }
@@ -44,7 +38,7 @@ kg_extraction_tools = [{
 }]
 
 def process_unstructured_text_to_kg(text: str) -> dict:
-    print("  [Step 1] AI 抽取中...")
+    print("[Step 1] AI 抽取中...")
     try:
         response = zai_client.chat.completions.create(
             model='glm-4.7',
@@ -97,46 +91,6 @@ def run_kg_pipeline(text: str):
         rel['target_kg_id'] = id_mapping.get(rel['target'], rel['target'])
     return kg_data
 
-# ==========================================
-# 存储逻辑区
-# ==========================================
-class Neo4jStorage:
-    def __init__(self, uri, user, pwd):
-        self.driver = GraphDatabase.driver(uri, auth=(user, pwd))
-
-    def upsert_knowledge_graph(self, kg_data: dict):
-        if not kg_data: return
-        with self.driver.session() as session:
-            if kg_data.get('entities'):
-                session.execute_write(self._upsert_nodes, kg_data['entities'])
-            if kg_data.get('relations'):
-                session.execute_write(self._upsert_edges_apoc, kg_data['relations'])
-
-    @staticmethod
-    def _upsert_nodes(tx, nodes: list):
-        query = """
-        UNWIND $nodes AS node
-        MERGE (n:Entity {kg_id: node.kg_id})
-        ON CREATE SET n.name = node.name, n.type = node.type, n.description = node.description, n.aliases = [node.name]
-        ON MATCH SET n.aliases = CASE WHEN NOT node.name IN coalesce(n.aliases,[]) THEN coalesce(n.aliases,[]) + node.name ELSE n.aliases END
-        """
-        tx.run(query, nodes=nodes)
-
-    @staticmethod
-    def _upsert_edges_apoc(tx, edges: list):
-        query = """
-        UNWIND $edges AS edge
-        MATCH (source:Entity {kg_id: edge.source_kg_id})
-        MATCH (target:Entity {kg_id: edge.target_kg_id})
-        WITH source, target, edge, toUpper(replace(edge.relation_type, ' ', '_')) AS relType
-        CALL apoc.merge.relationship(source, relType, {}, {}, target, {}) YIELD rel
-        RETURN count(rel)
-        """
-        tx.run(query, edges=edges)
-
-# ==========================================
-# 系统主入口
-# ==========================================
 def save_json_data(data, filename):
     """保存处理好的结构化数据到本地 JSON"""
     output_path = os.path.join(OUTPUT_FOLDER, filename)
@@ -144,50 +98,36 @@ def save_json_data(data, filename):
         json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"  [Save] 结构化数据已保存至: {output_path}")
 
+# ==========================================
+# 主入口
+# ==========================================
 if __name__ == "__main__":
-    print("====== 🚀 知识图谱构建 Pipeline 启动 ======")
+    print("====== 🚀 知识图谱信息抽取启动 ======")
     
-    # 1. 获取输入文件夹下的所有 .txt 文件
-    files = [f for f in os.listdir(INPUT_FOLDER) if f.endswith('.txt')]
+    files =[f for f in os.listdir(INPUT_FOLDER) if f.endswith('.txt')]
     
     if not files:
         print(f"⚠️  在 {INPUT_FOLDER} 文件夹下未找到 .txt 文件，请先放入文件。")
     else:
-        try:
-            # 初始化 Neo4j 存储
-            storage = Neo4jStorage(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+        for file_name in files:
+            file_path = os.path.join(INPUT_FOLDER, file_name)
+            print(f"\n📄 正在处理文件: {file_name}")
             
-            for file_name in files:
-                file_path = os.path.join(INPUT_FOLDER, file_name)
-                print(f"\n📄 正在处理文件: {file_name}")
-                
-                # A. 读取文件内容
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                if not content.strip():
-                    print(f"跳过空文件: {file_name}")
-                    continue
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            if not content.strip():
+                print(f"跳过空文件: {file_name}")
+                continue
 
-                # B. 运行 AI 处理 Pipeline
-                final_cleaned_data = run_kg_pipeline(content)
+            final_cleaned_data = run_kg_pipeline(content)
+            
+            if final_cleaned_data:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_json_name = f"kg_output_{file_name.split('.')[0]}_{timestamp}.json"
+                save_json_data(final_cleaned_data, output_json_name)
+                print(f"✅ 文件 {file_name} 抽取完成！")
+            else:
+                print(f"❌ 文件 {file_name} 抽取失败。")
                 
-                if final_cleaned_data:
-                    # C. 保存处理好的 JSON 到本地 (文件名增加时间戳防止重复)
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    output_json_name = f"kg_output_{file_name.split('.')[0]}_{timestamp}.json"
-                    save_json_data(final_cleaned_data, output_json_name)
-                    
-                    # D. 写入 Neo4j
-                    print(f"  [Step 3] 正在写入 Neo4j...")
-                    storage.upsert_knowledge_graph(final_cleaned_data)
-                    print(f"✅ 文件 {file_name} 处理并入库完成！")
-                else:
-                    print(f"❌ 文件 {file_name} 抽取失败。")
-            
-            storage.driver.close()
-            
-        except Exception as e:
-            print(f"❌ 运行过程中发生错误: {e}")
-
-    print("\n🎉 所有任务处理完毕。")
+    print("\n🎉 所有文件抽取完毕，请运行导入脚本以存入Neo4j。")

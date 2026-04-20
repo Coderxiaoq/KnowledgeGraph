@@ -1,0 +1,139 @@
+{
+    "entities": [
+        {
+            "id": "苹果公司",
+            "type": "公司",
+            "description": "美国跨国科技公司",
+            "kg_id": "LOCAL_bb68fc72",
+            "name": "苹果公司"
+        },
+        {
+            "id": "美国",
+            "type": "国家",
+            "description": "苹果公司所在国家",
+            "kg_id": "LOCAL_f0a07d92",
+            "name": "美国"
+        },
+        {
+            "id": "加州库比蒂诺硅谷",
+            "type": "地点",
+            "description": "苹果公司总部所在地",
+            "kg_id": "LOCAL_2f41b260",
+            "name": "加州库比蒂诺硅谷"
+        },
+        {
+            "id": "史蒂夫·乔布斯",
+            "type": "人物",
+            "description": "苹果公司联合创始人",
+            "kg_id": "LOCAL_b1f98282",
+            "name": "史蒂夫·乔布斯"
+        },
+        {
+            "id": "斯蒂夫·盖瑞·沃兹尼亚克",
+            "type": "人物",
+            "description": "苹果公司联合创始人",
+            "kg_id": "LOCAL_5099170b",
+            "name": "斯蒂夫·盖瑞·沃兹尼亚克"
+        },
+        {
+            "id": "电脑",
+            "type": "产品",
+            "description": "苹果公司主要产品之一",
+            "kg_id": "LOCAL_42585e8c",
+            "name": "电脑"
+        },
+        {
+            "id": "手机",
+            "type": "产品",
+            "description": "苹果公司主要产品之一",
+            "kg_id": "LOCAL_ac33fb7e",
+            "name": "手机"
+        },
+        {
+            "id": "穿戴设备",
+            "type": "产品",
+            "description": "苹果公司主要产品之一",
+            "kg_id": "LOCAL_66168d5b",
+            "name": "穿戴设备"
+        },
+        {
+            "id": "计算机软件",
+            "type": "服务",
+            "description": "苹果公司提供的服务",
+            "kg_id": "LOCAL_8beb6e11",
+            "name": "计算机软件"
+        },
+        {
+            "id": "在线服务",
+            "type": "服务",
+            "description": "苹果公司提供的服务",
+            "kg_id": "LOCAL_669674c6",
+            "name": "在线服务"
+        }
+    ],
+    "relations": [
+        {
+            "source": "苹果公司",
+            "target": "美国",
+            "relation_type": "位于",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_f0a07d92"
+        },
+        {
+            "source": "苹果公司",
+            "target": "加州库比蒂诺硅谷",
+            "relation_type": "总部位于",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_2f41b260"
+        },
+        {
+            "source": "史蒂夫·乔布斯",
+            "target": "苹果公司",
+            "relation_type": "创立",
+            "source_kg_id": "LOCAL_b1f98282",
+            "target_kg_id": "LOCAL_bb68fc72"
+        },
+        {
+            "source": "斯蒂夫·盖瑞·沃兹尼亚克",
+            "target": "苹果公司",
+            "relation_type": "创立",
+            "source_kg_id": "LOCAL_5099170b",
+            "target_kg_id": "LOCAL_bb68fc72"
+        },
+        {
+            "source": "苹果公司",
+            "target": "电脑",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_42585e8c"
+        },
+        {
+            "source": "苹果公司",
+            "target": "手机",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_ac33fb7e"
+        },
+        {
+            "source": "苹果公司",
+            "target": "穿戴设备",
+            "relation_type": "设计研发",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_66168d5b"
+        },
+        {
+            "source": "苹果公司",
+            "target": "计算机软件",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_8beb6e11"
+        },
+        {
+            "source": "苹果公司",
+            "target": "在线服务",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_bb68fc72",
+            "target_kg_id": "LOCAL_669674c6"
+        }
+    ]
+}
