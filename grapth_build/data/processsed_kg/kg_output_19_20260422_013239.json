@@ -1,0 +1,111 @@
+{
+    "entities": [
+        {
+            "id": "dji_company",
+            "type": "公司",
+            "description": "DJI 大疆公司",
+            "kg_id": "LOCAL_1bbc8040",
+            "name": "dji_company"
+        },
+        {
+            "id": "data_platform_architect",
+            "type": "岗位",
+            "description": "数据平台后端架构师",
+            "kg_id": "LOCAL_1021090e",
+            "name": "data_platform_architect"
+        },
+        {
+            "id": "drone_product",
+            "type": "产品",
+            "description": "无人机产品",
+            "kg_id": "LOCAL_64c09e19",
+            "name": "drone_product"
+        },
+        {
+            "id": "handheld_product",
+            "type": "产品",
+            "description": "手持产品",
+            "kg_id": "LOCAL_8591e4ab",
+            "name": "handheld_product"
+        },
+        {
+            "id": "data_platform",
+            "type": "系统",
+            "description": "数据平台（Data Platform）",
+            "kg_id": "LOCAL_62602893",
+            "name": "data_platform"
+        },
+        {
+            "id": "lifecycle_management_system",
+            "type": "系统",
+            "description": "全生命周期管理系统",
+            "kg_id": "LOCAL_cc48d730",
+            "name": "lifecycle_management_system"
+        },
+        {
+            "id": "unstructured_data",
+            "type": "数据类型",
+            "description": "海量非结构化数据",
+            "kg_id": "LOCAL_21a1b3f3",
+            "name": "unstructured_data"
+        },
+        {
+            "id": "storage_io_challenge",
+            "type": "技术挑战",
+            "description": "高效存储与IO难题",
+            "kg_id": "LOCAL_948c37ab",
+            "name": "storage_io_challenge"
+        }
+    ],
+    "relations": [
+        {
+            "source": "dji_company",
+            "target": "data_platform_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_1bbc8040",
+            "target_kg_id": "LOCAL_1021090e"
+        },
+        {
+            "source": "data_platform_architect",
+            "target": "data_platform",
+            "relation_type": "负责设计开发",
+            "source_kg_id": "LOCAL_1021090e",
+            "target_kg_id": "LOCAL_62602893"
+        },
+        {
+            "source": "data_platform_architect",
+            "target": "lifecycle_management_system",
+            "relation_type": "负责构建",
+            "source_kg_id": "LOCAL_1021090e",
+            "target_kg_id": "LOCAL_cc48d730"
+        },
+        {
+            "source": "data_platform",
+            "target": "drone_product",
+            "relation_type": "应用于",
+            "source_kg_id": "LOCAL_62602893",
+            "target_kg_id": "LOCAL_64c09e19"
+        },
+        {
+            "source": "data_platform",
+            "target": "handheld_product",
+            "relation_type": "应用于",
+            "source_kg_id": "LOCAL_62602893",
+            "target_kg_id": "LOCAL_8591e4ab"
+        },
+        {
+            "source": "lifecycle_management_system",
+            "target": "unstructured_data",
+            "relation_type": "处理",
+            "source_kg_id": "LOCAL_cc48d730",
+            "target_kg_id": "LOCAL_21a1b3f3"
+        },
+        {
+            "source": "lifecycle_management_system",
+            "target": "storage_io_challenge",
+            "relation_type": "解决",
+            "source_kg_id": "LOCAL_cc48d730",
+            "target_kg_id": "LOCAL_948c37ab"
+        }
+    ]
+}

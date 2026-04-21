@@ -1,0 +1,167 @@
+{
+    "entities": [
+        {
+            "id": "数据堂",
+            "type": "公司",
+            "description": "招聘架构师的公司",
+            "kg_id": "LOCAL_50c3bb6b",
+            "name": "数据堂"
+        },
+        {
+            "id": "架构师_数据方向",
+            "type": "岗位",
+            "description": "数据方向架构师岗位",
+            "kg_id": "LOCAL_cc73691b",
+            "name": "架构师_数据方向"
+        },
+        {
+            "id": "技术架构设计",
+            "type": "职责",
+            "description": "软件系统的技术架构设计",
+            "kg_id": "LOCAL_8a3f8a29",
+            "name": "技术架构设计"
+        },
+        {
+            "id": "技术路径选择",
+            "type": "职责",
+            "description": "技术路径选择",
+            "kg_id": "LOCAL_1bec48a2",
+            "name": "技术路径选择"
+        },
+        {
+            "id": "关键技术问题攻关",
+            "type": "职责",
+            "description": "牵头关键技术问题攻关",
+            "kg_id": "LOCAL_7b4264f9",
+            "name": "关键技术问题攻关"
+        },
+        {
+            "id": "业务需求",
+            "type": "要求",
+            "description": "业务需求",
+            "kg_id": "LOCAL_aa886a64",
+            "name": "业务需求"
+        },
+        {
+            "id": "技术实现",
+            "type": "要求",
+            "description": "技术实现",
+            "kg_id": "LOCAL_43d945e0",
+            "name": "技术实现"
+        },
+        {
+            "id": "系统性能",
+            "type": "要求",
+            "description": "系统性能",
+            "kg_id": "LOCAL_e8882ca0",
+            "name": "系统性能"
+        },
+        {
+            "id": "可靠性",
+            "type": "要求",
+            "description": "系统可靠性",
+            "kg_id": "LOCAL_4dc36076",
+            "name": "可靠性"
+        },
+        {
+            "id": "安全性",
+            "type": "要求",
+            "description": "系统安全性",
+            "kg_id": "LOCAL_12a56e62",
+            "name": "安全性"
+        },
+        {
+            "id": "可扩展性",
+            "type": "要求",
+            "description": "系统可扩展性",
+            "kg_id": "LOCAL_f4a581a2",
+            "name": "可扩展性"
+        },
+        {
+            "id": "可维护性",
+            "type": "要求",
+            "description": "系统可维护性",
+            "kg_id": "LOCAL_33e117f1",
+            "name": "可维护性"
+        }
+    ],
+    "relations": [
+        {
+            "source": "数据堂",
+            "target": "架构师_数据方向",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_50c3bb6b",
+            "target_kg_id": "LOCAL_cc73691b"
+        },
+        {
+            "source": "架构师_数据方向",
+            "target": "技术架构设计",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_cc73691b",
+            "target_kg_id": "LOCAL_8a3f8a29"
+        },
+        {
+            "source": "架构师_数据方向",
+            "target": "技术路径选择",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_cc73691b",
+            "target_kg_id": "LOCAL_1bec48a2"
+        },
+        {
+            "source": "架构师_数据方向",
+            "target": "关键技术问题攻关",
+            "relation_type": "牵头",
+            "source_kg_id": "LOCAL_cc73691b",
+            "target_kg_id": "LOCAL_7b4264f9"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "业务需求",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_aa886a64"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "技术实现",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_43d945e0"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "系统性能",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_e8882ca0"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "可靠性",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_4dc36076"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "安全性",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_12a56e62"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "可扩展性",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_f4a581a2"
+        },
+        {
+            "source": "关键技术问题攻关",
+            "target": "可维护性",
+            "relation_type": "需要平衡",
+            "source_kg_id": "LOCAL_7b4264f9",
+            "target_kg_id": "LOCAL_33e117f1"
+        }
+    ]
+}

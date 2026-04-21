@@ -1,0 +1,69 @@
+{
+    "entities": [
+        {
+            "id": "liepin",
+            "type": "公司",
+            "description": "猎聘，招聘平台",
+            "kg_id": "LOCAL_9db1725c",
+            "name": "liepin"
+        },
+        {
+            "id": "beijing_company",
+            "type": "公司",
+            "description": "北京某企业，招聘方",
+            "kg_id": "LOCAL_b9388a47",
+            "name": "beijing_company"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师职位",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "enterprise_data_platform",
+            "type": "技术系统",
+            "description": "企业级数据平台",
+            "kg_id": "LOCAL_ce330dca",
+            "name": "enterprise_data_platform"
+        },
+        {
+            "id": "large_data_project",
+            "type": "项目",
+            "description": "大型数据平台建设项目",
+            "kg_id": "LOCAL_6185984e",
+            "name": "large_data_project"
+        }
+    ],
+    "relations": [
+        {
+            "source": "liepin",
+            "target": "data_architect",
+            "relation_type": "发布",
+            "source_kg_id": "LOCAL_9db1725c",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "beijing_company",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_b9388a47",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "enterprise_data_platform",
+            "relation_type": "需要设计经验",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_ce330dca"
+        },
+        {
+            "source": "data_architect",
+            "target": "large_data_project",
+            "relation_type": "需要主导经验",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_6185984e"
+        }
+    ]
+}

@@ -1,0 +1,125 @@
+{
+    "entities": [
+        {
+            "id": "智慧芽",
+            "type": "公司",
+            "description": "招聘数据架构师的公司之一",
+            "kg_id": "LOCAL_afa6890d",
+            "name": "智慧芽"
+        },
+        {
+            "id": "平安银行",
+            "type": "公司",
+            "description": "招聘数据架构师的公司之一",
+            "kg_id": "LOCAL_b4e9b18f",
+            "name": "平安银行"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "负责数据架构设计与治理的专业岗位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "大客户数据架构规划",
+            "type": "职责",
+            "description": "负责公司大客户数据架构规划与咨询",
+            "kg_id": "LOCAL_6882f872",
+            "name": "大客户数据架构规划"
+        },
+        {
+            "id": "数据管理机制",
+            "type": "职责",
+            "description": "为客户建立数据管理机制",
+            "kg_id": "LOCAL_05abc109",
+            "name": "数据管理机制"
+        },
+        {
+            "id": "数据模型设计",
+            "type": "职责",
+            "description": "负责公司大客户数据模型设计",
+            "kg_id": "LOCAL_96dda330",
+            "name": "数据模型设计"
+        },
+        {
+            "id": "数据标准体系编制",
+            "type": "职责",
+            "description": "负责公司大客户数据标准体系编制",
+            "kg_id": "LOCAL_5bcd05bc",
+            "name": "数据标准体系编制"
+        },
+        {
+            "id": "数据治理体系建设",
+            "type": "职责",
+            "description": "负责公司大客户数据治理体系建设",
+            "kg_id": "LOCAL_3abd138b",
+            "name": "数据治理体系建设"
+        },
+        {
+            "id": "数据治理实施",
+            "type": "职责",
+            "description": "负责公司大客户数据治理实施",
+            "kg_id": "LOCAL_f8c24135",
+            "name": "数据治理实施"
+        }
+    ],
+    "relations": [
+        {
+            "source": "智慧芽",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_afa6890d",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "平安银行",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_b4e9b18f",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "大客户数据架构规划",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_6882f872"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据管理机制",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_05abc109"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据模型设计",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_96dda330"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据标准体系编制",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_5bcd05bc"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理体系建设",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_3abd138b"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理实施",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_f8c24135"
+        }
+    ]
+}

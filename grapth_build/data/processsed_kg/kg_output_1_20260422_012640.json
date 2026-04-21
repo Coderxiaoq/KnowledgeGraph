@@ -1,0 +1,111 @@
+{
+    "entities": [
+        {
+            "id": "艾麦物流",
+            "type": "公司",
+            "description": "艾麦物流（杭州）",
+            "kg_id": "LOCAL_90f902cb",
+            "name": "艾麦物流"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "负责数据架构设计与优化的技术岗位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "数据架构设计能力",
+            "type": "技能",
+            "description": "出色的数据架构设计能力",
+            "kg_id": "LOCAL_87177e61",
+            "name": "数据架构设计能力"
+        },
+        {
+            "id": "数据仓库",
+            "type": "技术",
+            "description": "数据存储和管理解决方案",
+            "kg_id": "LOCAL_68c0cda5",
+            "name": "数据仓库"
+        },
+        {
+            "id": "数据湖",
+            "type": "技术",
+            "description": "大规模数据存储解决方案",
+            "kg_id": "LOCAL_539d4415",
+            "name": "数据湖"
+        },
+        {
+            "id": "实时数据流",
+            "type": "技术",
+            "description": "实时数据处理技术",
+            "kg_id": "LOCAL_404c10de",
+            "name": "实时数据流"
+        },
+        {
+            "id": "5-10年相关经验",
+            "type": "经验要求",
+            "description": "5-10年相关工作经验",
+            "kg_id": "LOCAL_85f7347d",
+            "name": "5-10年相关经验"
+        },
+        {
+            "id": "本科及以上学历",
+            "type": "学历要求",
+            "description": "本科及以上学历要求",
+            "kg_id": "LOCAL_ac87be7b",
+            "name": "本科及以上学历"
+        }
+    ],
+    "relations": [
+        {
+            "source": "艾麦物流",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_90f902cb",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据架构设计能力",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_87177e61"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据仓库",
+            "relation_type": "熟悉",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_68c0cda5"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据湖",
+            "relation_type": "熟悉",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_539d4415"
+        },
+        {
+            "source": "数据架构师",
+            "target": "实时数据流",
+            "relation_type": "熟悉",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_404c10de"
+        },
+        {
+            "source": "数据架构师",
+            "target": "5-10年相关经验",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_85f7347d"
+        },
+        {
+            "source": "数据架构师",
+            "target": "本科及以上学历",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_ac87be7b"
+        }
+    ]
+}

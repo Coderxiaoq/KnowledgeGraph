@@ -1,0 +1,195 @@
+{
+    "entities": [
+        {
+            "id": "tencent",
+            "type": "公司",
+            "description": "腾讯公司",
+            "kg_id": "LOCAL_cbe774e7",
+            "name": "tencent"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "data_domain",
+            "type": "业务领域",
+            "description": "数据板块",
+            "kg_id": "LOCAL_c4137934",
+            "name": "data_domain"
+        },
+        {
+            "id": "enterprise_data_architecture",
+            "type": "架构类型",
+            "description": "企业级数据架构",
+            "kg_id": "LOCAL_0df9336e",
+            "name": "enterprise_data_architecture"
+        },
+        {
+            "id": "data_warehouse",
+            "type": "技术组件",
+            "description": "数据仓库",
+            "kg_id": "LOCAL_d4624ae1",
+            "name": "data_warehouse"
+        },
+        {
+            "id": "data_lake",
+            "type": "技术组件",
+            "description": "数据湖",
+            "kg_id": "LOCAL_a419085d",
+            "name": "data_lake"
+        },
+        {
+            "id": "real_time_data_stream",
+            "type": "技术组件",
+            "description": "实时数据流",
+            "kg_id": "LOCAL_1b14695a",
+            "name": "real_time_data_stream"
+        },
+        {
+            "id": "data_governance",
+            "type": "业务活动",
+            "description": "数据治理",
+            "kg_id": "LOCAL_5d485230",
+            "name": "data_governance"
+        },
+        {
+            "id": "data_standardization",
+            "type": "业务活动",
+            "description": "数据标准化",
+            "kg_id": "LOCAL_6c6d8d06",
+            "name": "data_standardization"
+        },
+        {
+            "id": "data_quality_framework",
+            "type": "框架类型",
+            "description": "数据质量管理框架",
+            "kg_id": "LOCAL_fa8f7fdc",
+            "name": "data_quality_framework"
+        },
+        {
+            "id": "data_lifecycle_strategy",
+            "type": "策略类型",
+            "description": "数据生命周期管理策略",
+            "kg_id": "LOCAL_a94cd030",
+            "name": "data_lifecycle_strategy"
+        },
+        {
+            "id": "data_model",
+            "type": "技术组件",
+            "description": "数据模型",
+            "kg_id": "LOCAL_a15c801e",
+            "name": "data_model"
+        },
+        {
+            "id": "data_consistency",
+            "type": "质量属性",
+            "description": "数据一致性",
+            "kg_id": "LOCAL_ede7d6bd",
+            "name": "data_consistency"
+        },
+        {
+            "id": "scalability",
+            "type": "质量属性",
+            "description": "可扩展性",
+            "kg_id": "LOCAL_bda12920",
+            "name": "scalability"
+        }
+    ],
+    "relations": [
+        {
+            "source": "tencent",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_cbe774e7",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_domain",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_c4137934"
+        },
+        {
+            "source": "data_architect",
+            "target": "enterprise_data_architecture",
+            "relation_type": "设计",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_0df9336e"
+        },
+        {
+            "source": "enterprise_data_architecture",
+            "target": "data_warehouse",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_0df9336e",
+            "target_kg_id": "LOCAL_d4624ae1"
+        },
+        {
+            "source": "enterprise_data_architecture",
+            "target": "data_lake",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_0df9336e",
+            "target_kg_id": "LOCAL_a419085d"
+        },
+        {
+            "source": "enterprise_data_architecture",
+            "target": "real_time_data_stream",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_0df9336e",
+            "target_kg_id": "LOCAL_1b14695a"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5d485230"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_standardization",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_6c6d8d06"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_quality_framework",
+            "relation_type": "建立",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_fa8f7fdc"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_lifecycle_strategy",
+            "relation_type": "定义",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a94cd030"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_model",
+            "relation_type": "负责设计",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a15c801e"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_consistency",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_ede7d6bd"
+        },
+        {
+            "source": "data_architect",
+            "target": "scalability",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_bda12920"
+        }
+    ]
+}

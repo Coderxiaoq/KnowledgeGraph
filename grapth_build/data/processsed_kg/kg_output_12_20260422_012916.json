@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "id": "company",
+            "type": "公司",
+            "description": "某企业（BOSS直聘）",
+            "kg_id": "LOCAL_9af67c68",
+            "name": "company"
+        },
+        {
+            "id": "position",
+            "type": "岗位",
+            "description": "数据仓库架构师",
+            "kg_id": "LOCAL_9b15390a",
+            "name": "position"
+        },
+        {
+            "id": "responsibility1",
+            "type": "职责",
+            "description": "数据仓库及数据集市建设",
+            "kg_id": "LOCAL_d4918745",
+            "name": "responsibility1"
+        },
+        {
+            "id": "responsibility2",
+            "type": "职责",
+            "description": "数据分析指标体系建设及元数据管理",
+            "kg_id": "LOCAL_08d911cb",
+            "name": "responsibility2"
+        },
+        {
+            "id": "responsibility3",
+            "type": "职责",
+            "description": "数据质量稽查和监控设计",
+            "kg_id": "LOCAL_b9bedc89",
+            "name": "responsibility3"
+        },
+        {
+            "id": "responsibility4",
+            "type": "职责",
+            "description": "数据报表系统及相关数据工作",
+            "kg_id": "LOCAL_484bb18a",
+            "name": "responsibility4"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company",
+            "target": "position",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_9af67c68",
+            "target_kg_id": "LOCAL_9b15390a"
+        },
+        {
+            "source": "position",
+            "target": "responsibility1",
+            "relation_type": "包含职责",
+            "source_kg_id": "LOCAL_9b15390a",
+            "target_kg_id": "LOCAL_d4918745"
+        },
+        {
+            "source": "position",
+            "target": "responsibility2",
+            "relation_type": "包含职责",
+            "source_kg_id": "LOCAL_9b15390a",
+            "target_kg_id": "LOCAL_08d911cb"
+        },
+        {
+            "source": "position",
+            "target": "responsibility3",
+            "relation_type": "包含职责",
+            "source_kg_id": "LOCAL_9b15390a",
+            "target_kg_id": "LOCAL_b9bedc89"
+        },
+        {
+            "source": "position",
+            "target": "responsibility4",
+            "relation_type": "包含职责",
+            "source_kg_id": "LOCAL_9b15390a",
+            "target_kg_id": "LOCAL_484bb18a"
+        }
+    ]
+}

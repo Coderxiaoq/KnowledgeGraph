@@ -1,0 +1,174 @@
+{
+    "entities": [
+        {
+            "id": "ping_an_bank",
+            "type": "公司",
+            "description": "平安银行",
+            "kg_id": "LOCAL_df6e51e0",
+            "name": "ping_an_bank"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "major_clients",
+            "type": "客户群体",
+            "description": "大客户",
+            "kg_id": "LOCAL_830906a3",
+            "name": "major_clients"
+        },
+        {
+            "id": "data_architecture_planning",
+            "type": "工作内容",
+            "description": "数据架构规划",
+            "kg_id": "LOCAL_0da226ed",
+            "name": "data_architecture_planning"
+        },
+        {
+            "id": "consulting",
+            "type": "工作内容",
+            "description": "咨询",
+            "kg_id": "LOCAL_120fc6b9",
+            "name": "consulting"
+        },
+        {
+            "id": "data_management_mechanism",
+            "type": "概念",
+            "description": "数据管理机制",
+            "kg_id": "LOCAL_5e3be1b0",
+            "name": "data_management_mechanism"
+        },
+        {
+            "id": "data_model_design",
+            "type": "工作内容",
+            "description": "数据模型设计",
+            "kg_id": "LOCAL_574eb20f",
+            "name": "data_model_design"
+        },
+        {
+            "id": "data_standard_system",
+            "type": "概念",
+            "description": "数据标准体系",
+            "kg_id": "LOCAL_f737a468",
+            "name": "data_standard_system"
+        },
+        {
+            "id": "data_governance_system",
+            "type": "概念",
+            "description": "数据治理体系",
+            "kg_id": "LOCAL_fddcb238",
+            "name": "data_governance_system"
+        },
+        {
+            "id": "implementation",
+            "type": "工作内容",
+            "description": "实施",
+            "kg_id": "LOCAL_76ca7ecf",
+            "name": "implementation"
+        }
+    ],
+    "relations": [
+        {
+            "source": "ping_an_bank",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_df6e51e0",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_architecture_planning",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_0da226ed"
+        },
+        {
+            "source": "data_architect",
+            "target": "consulting",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_120fc6b9"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_model_design",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_574eb20f"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_standard_system",
+            "relation_type": "负责编制",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_f737a468"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance_system",
+            "relation_type": "负责建设",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_fddcb238"
+        },
+        {
+            "source": "data_architect",
+            "target": "implementation",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_76ca7ecf"
+        },
+        {
+            "source": "data_architecture_planning",
+            "target": "major_clients",
+            "relation_type": "针对",
+            "source_kg_id": "LOCAL_0da226ed",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "consulting",
+            "target": "major_clients",
+            "relation_type": "针对",
+            "source_kg_id": "LOCAL_120fc6b9",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "data_management_mechanism",
+            "target": "major_clients",
+            "relation_type": "建立",
+            "source_kg_id": "LOCAL_5e3be1b0",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "data_model_design",
+            "target": "major_clients",
+            "relation_type": "针对",
+            "source_kg_id": "LOCAL_574eb20f",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "data_standard_system",
+            "target": "major_clients",
+            "relation_type": "针对",
+            "source_kg_id": "LOCAL_f737a468",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "data_governance_system",
+            "target": "major_clients",
+            "relation_type": "针对",
+            "source_kg_id": "LOCAL_fddcb238",
+            "target_kg_id": "LOCAL_830906a3"
+        },
+        {
+            "source": "implementation",
+            "target": "data_governance_system",
+            "relation_type": "实施",
+            "source_kg_id": "LOCAL_76ca7ecf",
+            "target_kg_id": "LOCAL_fddcb238"
+        }
+    ]
+}

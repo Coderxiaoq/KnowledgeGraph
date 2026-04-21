@@ -1,0 +1,69 @@
+{
+    "entities": [
+        {
+            "id": "新建元和融苏州",
+            "type": "公司",
+            "description": "新建元和融（苏州）公司",
+            "kg_id": "LOCAL_60d17141",
+            "name": "新建元和融苏州"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "数据架构师职位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "政务数据架构",
+            "type": "工作领域",
+            "description": "政务数据架构的设计、优化与实施",
+            "kg_id": "LOCAL_1c9d7461",
+            "name": "政务数据架构"
+        },
+        {
+            "id": "数据平台建设",
+            "type": "工作领域",
+            "description": "数据平台建设相关工作",
+            "kg_id": "LOCAL_69f4832f",
+            "name": "数据平台建设"
+        },
+        {
+            "id": "全日制985211本科及以上学历",
+            "type": "学历要求",
+            "description": "全日制985、211本科及以上学历要求",
+            "kg_id": "LOCAL_a67f704f",
+            "name": "全日制985211本科及以上学历"
+        }
+    ],
+    "relations": [
+        {
+            "source": "新建元和融苏州",
+            "target": "数据架构师",
+            "relation_type": "提供岗位",
+            "source_kg_id": "LOCAL_60d17141",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "政务数据架构",
+            "relation_type": "负责工作",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_1c9d7461"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据平台建设",
+            "relation_type": "参与工作",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_69f4832f"
+        },
+        {
+            "source": "数据架构师",
+            "target": "全日制985211本科及以上学历",
+            "relation_type": "学历要求",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_a67f704f"
+        }
+    ]
+}

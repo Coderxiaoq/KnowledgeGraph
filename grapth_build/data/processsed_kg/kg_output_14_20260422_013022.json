@@ -1,0 +1,146 @@
+{
+    "entities": [
+        {
+            "id": "company_1",
+            "type": "公司",
+            "description": "某企业（猎聘）",
+            "kg_id": "LOCAL_56f5d7c0",
+            "name": "company_1"
+        },
+        {
+            "id": "position_1",
+            "type": "岗位",
+            "description": "数据仓库架构师",
+            "kg_id": "LOCAL_3ab87371",
+            "name": "position_1"
+        },
+        {
+            "id": "tech_1",
+            "type": "技术概念",
+            "description": "数据仓库",
+            "kg_id": "LOCAL_a031d3b8",
+            "name": "tech_1"
+        },
+        {
+            "id": "tech_2",
+            "type": "技术概念",
+            "description": "数据库",
+            "kg_id": "LOCAL_0ed50b6d",
+            "name": "tech_2"
+        },
+        {
+            "id": "tech_3",
+            "type": "技术概念",
+            "description": "相关系统",
+            "kg_id": "LOCAL_c3916c39",
+            "name": "tech_3"
+        },
+        {
+            "id": "doc_1",
+            "type": "文档/方案",
+            "description": "数据仓库建设方案",
+            "kg_id": "LOCAL_5de0b1e5",
+            "name": "doc_1"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_1",
+            "target": "position_1",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_56f5d7c0",
+            "target_kg_id": "LOCAL_3ab87371"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "负责搭建与设计",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "负责规划",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_2",
+            "relation_type": "根据业务需求进行设计",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_0ed50b6d"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_2",
+            "relation_type": "根据业务需求进行实现",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_0ed50b6d"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_2",
+            "relation_type": "确保一致性和完整性",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_0ed50b6d"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_3",
+            "relation_type": "参与设计",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_c3916c39"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_3",
+            "relation_type": "参与开发",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_c3916c39"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_3",
+            "relation_type": "参与部署",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_c3916c39"
+        },
+        {
+            "source": "position_1",
+            "target": "doc_1",
+            "relation_type": "制定",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_5de0b1e5"
+        },
+        {
+            "source": "position_1",
+            "target": "doc_1",
+            "relation_type": "实施",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_5de0b1e5"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "监督实施过程",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "检查实施过程",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "评估实施过程",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        }
+    ]
+}

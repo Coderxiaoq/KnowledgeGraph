@@ -1,0 +1,97 @@
+{
+    "entities": [
+        {
+            "id": "alibaba_group",
+            "type": "公司",
+            "description": "阿里巴巴集团（杭州）",
+            "kg_id": "LOCAL_4bf2bf7f",
+            "name": "alibaba_group"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "business_data_model",
+            "type": "技术概念",
+            "description": "业务数据模型",
+            "kg_id": "LOCAL_097f267f",
+            "name": "business_data_model"
+        },
+        {
+            "id": "enterprise_data_architecture",
+            "type": "技术概念",
+            "description": "企业级数据架构",
+            "kg_id": "LOCAL_0df9336e",
+            "name": "enterprise_data_architecture"
+        },
+        {
+            "id": "data_governance",
+            "type": "技术概念",
+            "description": "数据治理",
+            "kg_id": "LOCAL_5d485230",
+            "name": "data_governance"
+        },
+        {
+            "id": "lakehouse_architecture",
+            "type": "技术概念",
+            "description": "湖仓一体架构",
+            "kg_id": "LOCAL_04b03f45",
+            "name": "lakehouse_architecture"
+        },
+        {
+            "id": "ai_data_platform",
+            "type": "技术概念",
+            "description": "AI相关数据平台",
+            "kg_id": "LOCAL_05e1badc",
+            "name": "ai_data_platform"
+        }
+    ],
+    "relations": [
+        {
+            "source": "alibaba_group",
+            "target": "data_architect",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_4bf2bf7f",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "business_data_model",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_097f267f"
+        },
+        {
+            "source": "data_architect",
+            "target": "enterprise_data_architecture",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_0df9336e"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5d485230"
+        },
+        {
+            "source": "data_architect",
+            "target": "lakehouse_architecture",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_04b03f45"
+        },
+        {
+            "source": "data_architect",
+            "target": "ai_data_platform",
+            "relation_type": "支持",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_05e1badc"
+        }
+    ]
+}

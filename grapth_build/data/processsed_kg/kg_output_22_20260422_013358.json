@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "id": "company",
+            "type": "公司",
+            "description": "某企业（BOSS直聘）",
+            "kg_id": "LOCAL_9af67c68",
+            "name": "company"
+        },
+        {
+            "id": "job_position",
+            "type": "岗位",
+            "description": "数据采集架构师",
+            "kg_id": "LOCAL_13dc3860",
+            "name": "job_position"
+        },
+        {
+            "id": "robots_protocol",
+            "type": "协议",
+            "description": "robots协议",
+            "kg_id": "LOCAL_ccc18617",
+            "name": "robots_protocol"
+        },
+        {
+            "id": "web_pages",
+            "type": "数据源",
+            "description": "互联网公开网页",
+            "kg_id": "LOCAL_8c4fa5a9",
+            "name": "web_pages"
+        },
+        {
+            "id": "datasets",
+            "type": "数据源",
+            "description": "公开数据集",
+            "kg_id": "LOCAL_b9aed7e2",
+            "name": "datasets"
+        },
+        {
+            "id": "distributed_crawler",
+            "type": "技术工具",
+            "description": "分布式网络爬虫",
+            "kg_id": "LOCAL_281c9e3c",
+            "name": "distributed_crawler"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company",
+            "target": "job_position",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_9af67c68",
+            "target_kg_id": "LOCAL_13dc3860"
+        },
+        {
+            "source": "job_position",
+            "target": "robots_protocol",
+            "relation_type": "遵守",
+            "source_kg_id": "LOCAL_13dc3860",
+            "target_kg_id": "LOCAL_ccc18617"
+        },
+        {
+            "source": "job_position",
+            "target": "web_pages",
+            "relation_type": "采集",
+            "source_kg_id": "LOCAL_13dc3860",
+            "target_kg_id": "LOCAL_8c4fa5a9"
+        },
+        {
+            "source": "job_position",
+            "target": "datasets",
+            "relation_type": "采集",
+            "source_kg_id": "LOCAL_13dc3860",
+            "target_kg_id": "LOCAL_b9aed7e2"
+        },
+        {
+            "source": "job_position",
+            "target": "distributed_crawler",
+            "relation_type": "设计开发",
+            "source_kg_id": "LOCAL_13dc3860",
+            "target_kg_id": "LOCAL_281c9e3c"
+        }
+    ]
+}

@@ -1,0 +1,69 @@
+{
+    "entities": [
+        {
+            "id": "company_001",
+            "type": "公司",
+            "description": "某企业（猎聘）",
+            "kg_id": "LOCAL_0b7c6689",
+            "name": "company_001"
+        },
+        {
+            "id": "position_001",
+            "type": "岗位",
+            "description": "大数据架构师",
+            "kg_id": "LOCAL_c648f70d",
+            "name": "position_001"
+        },
+        {
+            "id": "tech_001",
+            "type": "技术领域",
+            "description": "大数据平台架构",
+            "kg_id": "LOCAL_bc487982",
+            "name": "tech_001"
+        },
+        {
+            "id": "tech_002",
+            "type": "技术领域",
+            "description": "Hadoop生态",
+            "kg_id": "LOCAL_cbae90d6",
+            "name": "tech_002"
+        },
+        {
+            "id": "tech_003",
+            "type": "技术领域",
+            "description": "大数据算法平台",
+            "kg_id": "LOCAL_c7c84669",
+            "name": "tech_003"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_001",
+            "target": "position_001",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_0b7c6689",
+            "target_kg_id": "LOCAL_c648f70d"
+        },
+        {
+            "source": "position_001",
+            "target": "tech_001",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_bc487982"
+        },
+        {
+            "source": "position_001",
+            "target": "tech_002",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_cbae90d6"
+        },
+        {
+            "source": "position_001",
+            "target": "tech_003",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_c7c84669"
+        }
+    ]
+}

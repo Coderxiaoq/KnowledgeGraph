@@ -1,0 +1,90 @@
+{
+    "entities": [
+        {
+            "id": "kameichen",
+            "type": "公司",
+            "description": "凯美晨",
+            "kg_id": "LOCAL_a183b159",
+            "name": "kameichen"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "sales_channels",
+            "type": "业务概念",
+            "description": "销售渠道",
+            "kg_id": "LOCAL_571c4cbe",
+            "name": "sales_channels"
+        },
+        {
+            "id": "data_requirements",
+            "type": "业务概念",
+            "description": "数据需求",
+            "kg_id": "LOCAL_70477bc1",
+            "name": "data_requirements"
+        },
+        {
+            "id": "data_governance_solution",
+            "type": "解决方案",
+            "description": "数据治理方案",
+            "kg_id": "LOCAL_83dde108",
+            "name": "data_governance_solution"
+        },
+        {
+            "id": "data_architecture",
+            "type": "技术概念",
+            "description": "数据架构",
+            "kg_id": "LOCAL_db45a586",
+            "name": "data_architecture"
+        },
+        {
+            "id": "enterprise_data_architecture",
+            "type": "技术概念",
+            "description": "企业级数据架构",
+            "kg_id": "LOCAL_0df9336e",
+            "name": "enterprise_data_architecture"
+        }
+    ],
+    "relations": [
+        {
+            "source": "kameichen",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_a183b159",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "sales_channels",
+            "relation_type": "挖掘数据需求",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_571c4cbe"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance_solution",
+            "relation_type": "提供",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_83dde108"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_architecture",
+            "relation_type": "解决",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_db45a586"
+        },
+        {
+            "source": "data_architect",
+            "target": "enterprise_data_architecture",
+            "relation_type": "负责规划与演进",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_0df9336e"
+        }
+    ]
+}

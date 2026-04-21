@@ -1,0 +1,55 @@
+{
+    "entities": [
+        {
+            "id": "company_zhongwang",
+            "type": "公司",
+            "description": "中网公司",
+            "kg_id": "LOCAL_676769f5",
+            "name": "company_zhongwang"
+        },
+        {
+            "id": "position_data_architect",
+            "type": "职位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_62317e2a",
+            "name": "position_data_architect"
+        },
+        {
+            "id": "responsibility_1",
+            "type": "职责",
+            "description": "负责系统架构设计、研发工作，承担从业务向技术转换的桥梁作用",
+            "kg_id": "LOCAL_5623245e",
+            "name": "responsibility_1"
+        },
+        {
+            "id": "responsibility_2",
+            "type": "职责",
+            "description": "熟悉安卓App开发相关工作（部分岗位扩展）",
+            "kg_id": "LOCAL_d66ee706",
+            "name": "responsibility_2"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_zhongwang",
+            "target": "position_data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_676769f5",
+            "target_kg_id": "LOCAL_62317e2a"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "responsibility_1",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_5623245e"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "responsibility_2",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_d66ee706"
+        }
+    ]
+}

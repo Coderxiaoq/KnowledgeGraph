@@ -4,6 +4,7 @@ import uuid
 import requests
 import re
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from zai import ZhipuAiClient
 
 # ==========================================
@@ -13,8 +14,11 @@ from zai import ZhipuAiClient
 zai_client = ZhipuAiClient(api_key=os.getenv("ZAI_API_KEY"))
 
 # 文件路径配置
-INPUT_FOLDER = "../data/input_texts"    # 存放待处理文本的文件夹
-OUTPUT_FOLDER = "../data/processed_kg"  # 存放生成的 JSON 数据的文件夹
+INPUT_FOLDER = "grapth_build\data\input_texts"    # 存放待处理文本的文件夹
+OUTPUT_FOLDER = "grapth_build\data\processsed_kg"  # 存放生成的 JSON 数据的文件夹
+
+# 全局实体缓存，避免重复查询相同的实体
+ENTITY_CACHE = {}
 
 # 确保文件夹存在
 os.makedirs(INPUT_FOLDER, exist_ok=True)
@@ -45,7 +49,7 @@ def process_unstructured_text_to_kg(text: str) -> dict:
     print("[Step 1] AI 抽取中...")
     try:
         response = zai_client.chat.completions.create(
-            model='glm-4.7',
+            model='glm-4.5',
             messages=[{"role": "system", "content": "提取核心实体和关系。"}, {"role": "user", "content": text}],
             tools=kg_extraction_tools, tool_choice={"type": "function", "function": {"name": "extract_knowledge_graph"}},
             temperature=0.1
@@ -66,33 +70,68 @@ def search_wikidata(entity_name):
     except:
         return[]
 
+
 def link_entity(new_entity, context_text):
-    candidates = search_wikidata(new_entity.get('id'))
-    if not candidates: return "LOCAL_" + str(uuid.uuid4()).split('-')[0]
+    entity_name = new_entity.get('id')
+    
+    # 优化：检查缓存，如果有直接返回
+    if entity_name in ENTITY_CACHE:
+        return entity_name, ENTITY_CACHE[entity_name]
+
+    candidates = search_wikidata(entity_name)
+    if not candidates: 
+        new_id = "LOCAL_" + str(uuid.uuid4()).split('-')[0]
+        ENTITY_CACHE[entity_name] = new_id
+        return entity_name, new_id
+
     c_str = "\n".join([f"- QID:{c['qid']}, 名称:{c['label']}, 描述:{c['description']}" for c in candidates])
-    prompt = f"判断抽取实体对应候选实体中的哪一个。上下文: {context_text}\n抽取实体: {new_entity.get('id')}\n候选:\n{c_str}\n只输出对应QID或NONE。"
+    prompt = f"判断抽取实体对应候选实体中的哪一个。上下文: {context_text}\n抽取实体: {entity_name}\n候选:\n{c_str}\n只输出对应QID或NONE。"
+    
     try:
-        res = zai_client.chat.completions.create(model='glm-4.7', messages=[{"role": "user", "content": prompt}], temperature=0.1)
+        res = zai_client.chat.completions.create(model='glm-4.5', messages=[{"role": "user", "content": prompt}], temperature=0.1)
         ans = res.choices[0].message.content.strip().upper()
         match = re.search(r'Q\d+', ans)
-        if match: return match.group(0)
-    except: pass
-    return "LOCAL_" + str(uuid.uuid4()).split('-')[0]
+        if match: 
+            new_id = match.group(0)
+            ENTITY_CACHE[entity_name] = new_id
+            return entity_name, new_id
+    except: 
+        pass
+    
+    new_id = "LOCAL_" + str(uuid.uuid4()).split('-')[0]
+    ENTITY_CACHE[entity_name] = new_id
+    return entity_name, new_id
 
 def run_kg_pipeline(text: str):
     kg_data = process_unstructured_text_to_kg(text)
     if not kg_data: return None
-    print(f"  [Step 2] 实体链接与对齐 (Wikidata)...")
+    
+    print(f"  [Step 2] 实体链接与对齐 (并发请求中)...")
     id_mapping = {}
-    for entity in kg_data.get('entities', []):
-        old_name = entity['id']
-        new_id = link_entity(entity, text)
-        id_mapping[old_name] = new_id
-        entity['kg_id'], entity['name'] = new_id, old_name
+    entities = kg_data.get('entities',[])
+    
+    # 优化：使用线程池并发进行实体链接
+    # 注意：max_workers 不要设置太大，否则容易触发大模型 API 的并发限制 (Rate Limit)
+    # 推荐设置为 5 到 10 之间
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        # 提交所有任务到线程池
+        futures = {executor.submit(link_entity, entity, text): entity for entity in entities}
         
+        for future in as_completed(futures):
+            entity = futures[future]
+            try:
+                # 获取返回值 (entity_name, new_id)
+                old_name, new_id = future.result()
+                id_mapping[old_name] = new_id
+                entity['kg_id'] = new_id
+                entity['name'] = old_name
+            except Exception as e:
+                print(f"实体 {entity.get('id')} 链接出错: {e}")
+                
     for rel in kg_data.get('relations',[]):
         rel['source_kg_id'] = id_mapping.get(rel['source'], rel['source'])
         rel['target_kg_id'] = id_mapping.get(rel['target'], rel['target'])
+        
     return kg_data
 
 def save_json_data(data, filename):

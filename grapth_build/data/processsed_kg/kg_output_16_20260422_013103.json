@@ -1,0 +1,153 @@
+{
+    "entities": [
+        {
+            "id": "company_boss",
+            "type": "公司",
+            "description": "某企业（BOSS直聘）",
+            "kg_id": "LOCAL_faf008f3",
+            "name": "company_boss"
+        },
+        {
+            "id": "position_data_architect",
+            "type": "岗位",
+            "description": "数据系统架构师",
+            "kg_id": "LOCAL_62317e2a",
+            "name": "position_data_architect"
+        },
+        {
+            "id": "big_data_system",
+            "type": "系统",
+            "description": "大数据系统",
+            "kg_id": "LOCAL_aa0270d2",
+            "name": "big_data_system"
+        },
+        {
+            "id": "massive_data",
+            "type": "数据类型",
+            "description": "海量数据",
+            "kg_id": "LOCAL_0e39923b",
+            "name": "massive_data"
+        },
+        {
+            "id": "large_scale_business_system",
+            "type": "系统",
+            "description": "大规模业务系统",
+            "kg_id": "LOCAL_fb7dbcf5",
+            "name": "large_scale_business_system"
+        },
+        {
+            "id": "online_architecture",
+            "type": "架构类型",
+            "description": "在线架构",
+            "kg_id": "LOCAL_1bb5e443",
+            "name": "online_architecture"
+        },
+        {
+            "id": "offline_architecture",
+            "type": "架构类型",
+            "description": "离线架构",
+            "kg_id": "LOCAL_918be5aa",
+            "name": "offline_architecture"
+        },
+        {
+            "id": "core_coding",
+            "type": "工作内容",
+            "description": "核心编码",
+            "kg_id": "LOCAL_d06bbed5",
+            "name": "core_coding"
+        },
+        {
+            "id": "computer_major",
+            "type": "专业领域",
+            "description": "计算机相关专业",
+            "kg_id": "LOCAL_6860880e",
+            "name": "computer_major"
+        },
+        {
+            "id": "doctoral_degree",
+            "type": "学历要求",
+            "description": "博士学历",
+            "kg_id": "LOCAL_c8b83a92",
+            "name": "doctoral_degree"
+        },
+        {
+            "id": "architecture_design_ability",
+            "type": "能力要求",
+            "description": "系统架构设计能力",
+            "kg_id": "LOCAL_590932cf",
+            "name": "architecture_design_ability"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_boss",
+            "target": "position_data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_faf008f3",
+            "target_kg_id": "LOCAL_62317e2a"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "big_data_system",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_aa0270d2"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "core_coding",
+            "relation_type": "参与",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_d06bbed5"
+        },
+        {
+            "source": "big_data_system",
+            "target": "massive_data",
+            "relation_type": "处理",
+            "source_kg_id": "LOCAL_aa0270d2",
+            "target_kg_id": "LOCAL_0e39923b"
+        },
+        {
+            "source": "big_data_system",
+            "target": "large_scale_business_system",
+            "relation_type": "支持",
+            "source_kg_id": "LOCAL_aa0270d2",
+            "target_kg_id": "LOCAL_fb7dbcf5"
+        },
+        {
+            "source": "big_data_system",
+            "target": "online_architecture",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_aa0270d2",
+            "target_kg_id": "LOCAL_1bb5e443"
+        },
+        {
+            "source": "big_data_system",
+            "target": "offline_architecture",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_aa0270d2",
+            "target_kg_id": "LOCAL_918be5aa"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "computer_major",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_6860880e"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "doctoral_degree",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_c8b83a92"
+        },
+        {
+            "source": "position_data_architect",
+            "target": "architecture_design_ability",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_62317e2a",
+            "target_kg_id": "LOCAL_590932cf"
+        }
+    ]
+}

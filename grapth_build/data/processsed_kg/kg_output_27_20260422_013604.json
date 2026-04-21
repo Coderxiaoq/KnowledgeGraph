@@ -1,0 +1,111 @@
+{
+    "entities": [
+        {
+            "id": "company_1",
+            "type": "公司",
+            "description": "某企业",
+            "kg_id": "LOCAL_56f5d7c0",
+            "name": "company_1"
+        },
+        {
+            "id": "position_1",
+            "type": "岗位",
+            "description": "数据仓库架构师",
+            "kg_id": "LOCAL_3ab87371",
+            "name": "position_1"
+        },
+        {
+            "id": "tech_1",
+            "type": "技术概念",
+            "description": "数据仓库",
+            "kg_id": "LOCAL_a031d3b8",
+            "name": "tech_1"
+        },
+        {
+            "id": "tech_2",
+            "type": "技术概念",
+            "description": "数据集市",
+            "kg_id": "LOCAL_0ed50b6d",
+            "name": "tech_2"
+        },
+        {
+            "id": "tech_3",
+            "type": "技术概念",
+            "description": "数据分析指标体系",
+            "kg_id": "LOCAL_c3916c39",
+            "name": "tech_3"
+        },
+        {
+            "id": "tech_4",
+            "type": "技术概念",
+            "description": "元数据管理",
+            "kg_id": "LOCAL_96e241b5",
+            "name": "tech_4"
+        },
+        {
+            "id": "tech_5",
+            "type": "技术概念",
+            "description": "数据质量稽查",
+            "kg_id": "LOCAL_3e5d824c",
+            "name": "tech_5"
+        },
+        {
+            "id": "tech_6",
+            "type": "技术概念",
+            "description": "数据质量监控",
+            "kg_id": "LOCAL_e9e226b2",
+            "name": "tech_6"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_1",
+            "target": "position_1",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_56f5d7c0",
+            "target_kg_id": "LOCAL_3ab87371"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_1",
+            "relation_type": "负责建设",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_a031d3b8"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_2",
+            "relation_type": "负责建设",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_0ed50b6d"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_3",
+            "relation_type": "负责建设",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_c3916c39"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_4",
+            "relation_type": "负责管理",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_96e241b5"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_5",
+            "relation_type": "负责设计",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_3e5d824c"
+        },
+        {
+            "source": "position_1",
+            "target": "tech_6",
+            "relation_type": "负责设计",
+            "source_kg_id": "LOCAL_3ab87371",
+            "target_kg_id": "LOCAL_e9e226b2"
+        }
+    ]
+}

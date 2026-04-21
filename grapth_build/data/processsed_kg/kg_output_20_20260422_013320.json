@@ -1,0 +1,97 @@
+{
+    "entities": [
+        {
+            "id": "联发科技",
+            "type": "公司",
+            "description": "招聘数据架构师的公司",
+            "kg_id": "LOCAL_e6cc9c18",
+            "name": "联发科技"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "负责数据治理和数据模型设计的职位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "数据治理策略",
+            "type": "策略",
+            "description": "包括数据质量监控、元数据管理、数据血缘追踪的综合策略",
+            "kg_id": "LOCAL_6de27986",
+            "name": "数据治理策略"
+        },
+        {
+            "id": "数据质量监控",
+            "type": "活动",
+            "description": "监控数据质量的活动",
+            "kg_id": "LOCAL_44ed2945",
+            "name": "数据质量监控"
+        },
+        {
+            "id": "元数据管理",
+            "type": "活动",
+            "description": "管理元数据的活动",
+            "kg_id": "LOCAL_63bb6185",
+            "name": "元数据管理"
+        },
+        {
+            "id": "数据血缘追踪",
+            "type": "活动",
+            "description": "追踪数据血缘关系的活动",
+            "kg_id": "LOCAL_c28ccd6c",
+            "name": "数据血缘追踪"
+        },
+        {
+            "id": "数据模型",
+            "type": "概念",
+            "description": "需要确保一致性、可扩展性和高性能的数据模型",
+            "kg_id": "LOCAL_441b3660",
+            "name": "数据模型"
+        }
+    ],
+    "relations": [
+        {
+            "source": "联发科技",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_e6cc9c18",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理策略",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_6de27986"
+        },
+        {
+            "source": "数据治理策略",
+            "target": "数据质量监控",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_6de27986",
+            "target_kg_id": "LOCAL_44ed2945"
+        },
+        {
+            "source": "数据治理策略",
+            "target": "元数据管理",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_6de27986",
+            "target_kg_id": "LOCAL_63bb6185"
+        },
+        {
+            "source": "数据治理策略",
+            "target": "数据血缘追踪",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_6de27986",
+            "target_kg_id": "LOCAL_c28ccd6c"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据模型",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_441b3660"
+        }
+    ]
+}

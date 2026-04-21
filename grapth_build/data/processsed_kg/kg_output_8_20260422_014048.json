@@ -1,0 +1,251 @@
+{
+    "entities": [
+        {
+            "id": "国航股份",
+            "type": "公司",
+            "description": "中国国际航空股份有限公司",
+            "kg_id": "LOCAL_347bb41c",
+            "name": "国航股份"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "负责数据架构设计与实施的专业技术岗位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "信息数据架构规划",
+            "type": "工作内容",
+            "description": "企业数据架构的整体规划与设计工作",
+            "kg_id": "LOCAL_220d87c3",
+            "name": "信息数据架构规划"
+        },
+        {
+            "id": "技术架构",
+            "type": "架构类型",
+            "description": "数据系统的技术实现架构",
+            "kg_id": "LOCAL_f84f66ad",
+            "name": "技术架构"
+        },
+        {
+            "id": "应用架构",
+            "type": "架构类型",
+            "description": "数据应用系统的架构设计",
+            "kg_id": "LOCAL_c65e5b2f",
+            "name": "应用架构"
+        },
+        {
+            "id": "业务架构",
+            "type": "架构类型",
+            "description": "基于业务需求的数据架构设计",
+            "kg_id": "LOCAL_6fc6aaa0",
+            "name": "业务架构"
+        },
+        {
+            "id": "数据技术解决方案",
+            "type": "解决方案",
+            "description": "数据技术相关的整体解决方案",
+            "kg_id": "LOCAL_91cee817",
+            "name": "数据技术解决方案"
+        },
+        {
+            "id": "数据仓库",
+            "type": "技术组件",
+            "description": "企业级数据存储和管理平台",
+            "kg_id": "LOCAL_68c0cda5",
+            "name": "数据仓库"
+        },
+        {
+            "id": "数据中台",
+            "type": "技术组件",
+            "description": "企业数据能力共享平台",
+            "kg_id": "LOCAL_2bcb2968",
+            "name": "数据中台"
+        },
+        {
+            "id": "航空业",
+            "type": "行业",
+            "description": "航空运输行业",
+            "kg_id": "LOCAL_11a30c8f",
+            "name": "航空业"
+        },
+        {
+            "id": "业务领域",
+            "type": "领域",
+            "description": "企业各个业务功能领域",
+            "kg_id": "LOCAL_5a3bc98d",
+            "name": "业务领域"
+        },
+        {
+            "id": "数据模型",
+            "type": "模型",
+            "description": "业务数据的结构化模型设计",
+            "kg_id": "LOCAL_441b3660",
+            "name": "数据模型"
+        },
+        {
+            "id": "数据整合",
+            "type": "工作内容",
+            "description": "多源数据的整合处理工作",
+            "kg_id": "LOCAL_e79ddac6",
+            "name": "数据整合"
+        },
+        {
+            "id": "数据分析",
+            "type": "工作内容",
+            "description": "数据的分析挖掘工作",
+            "kg_id": "LOCAL_5f335bcb",
+            "name": "数据分析"
+        },
+        {
+            "id": "数据应用",
+            "type": "工作内容",
+            "description": "数据在业务中的应用",
+            "kg_id": "LOCAL_8920ba4a",
+            "name": "数据应用"
+        },
+        {
+            "id": "数据拉通",
+            "type": "工作内容",
+            "description": "全公司数据的互联互通",
+            "kg_id": "LOCAL_71a5a479",
+            "name": "数据拉通"
+        },
+        {
+            "id": "数据融合",
+            "type": "工作内容",
+            "description": "多源数据的融合处理",
+            "kg_id": "LOCAL_e0d1fbfa",
+            "name": "数据融合"
+        },
+        {
+            "id": "价值挖掘",
+            "type": "工作内容",
+            "description": "从数据中挖掘商业价值",
+            "kg_id": "LOCAL_160a7869",
+            "name": "价值挖掘"
+        }
+    ],
+    "relations": [
+        {
+            "source": "国航股份",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_347bb41c",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "信息数据架构规划",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_220d87c3"
+        },
+        {
+            "source": "数据架构师",
+            "target": "技术架构",
+            "relation_type": "指导推进",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_f84f66ad"
+        },
+        {
+            "source": "数据架构师",
+            "target": "应用架构",
+            "relation_type": "指导推进",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_c65e5b2f"
+        },
+        {
+            "source": "数据架构师",
+            "target": "业务架构",
+            "relation_type": "指导推进",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_6fc6aaa0"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据技术解决方案",
+            "relation_type": "制定落实",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_91cee817"
+        },
+        {
+            "source": "数据技术解决方案",
+            "target": "数据仓库",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_91cee817",
+            "target_kg_id": "LOCAL_68c0cda5"
+        },
+        {
+            "source": "数据技术解决方案",
+            "target": "数据中台",
+            "relation_type": "包含",
+            "source_kg_id": "LOCAL_91cee817",
+            "target_kg_id": "LOCAL_2bcb2968"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据模型",
+            "relation_type": "牵头设计",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_441b3660"
+        },
+        {
+            "source": "航空业",
+            "target": "数据模型",
+            "relation_type": "影响",
+            "source_kg_id": "LOCAL_11a30c8f",
+            "target_kg_id": "LOCAL_441b3660"
+        },
+        {
+            "source": "业务领域",
+            "target": "数据模型",
+            "relation_type": "应用于",
+            "source_kg_id": "LOCAL_5a3bc98d",
+            "target_kg_id": "LOCAL_441b3660"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据整合",
+            "relation_type": "推动",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_e79ddac6"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据分析",
+            "relation_type": "推动",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_5f335bcb"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据应用",
+            "relation_type": "推动",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_8920ba4a"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据拉通",
+            "relation_type": "实现",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_71a5a479"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据融合",
+            "relation_type": "实现",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_e0d1fbfa"
+        },
+        {
+            "source": "数据架构师",
+            "target": "价值挖掘",
+            "relation_type": "实现",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_160a7869"
+        }
+    ]
+}

@@ -1,0 +1,209 @@
+{
+    "entities": [
+        {
+            "id": "company_001",
+            "type": "公司",
+            "description": "某研究院（BOSS直聘）",
+            "kg_id": "LOCAL_0b7c6689",
+            "name": "company_001"
+        },
+        {
+            "id": "position_001",
+            "type": "职位",
+            "description": "大数据平台架构师",
+            "kg_id": "LOCAL_c648f70d",
+            "name": "position_001"
+        },
+        {
+            "id": "responsibility_001",
+            "type": "职责",
+            "description": "设计研究院大数据解决方案的整体架构",
+            "kg_id": "LOCAL_436bd5f2",
+            "name": "responsibility_001"
+        },
+        {
+            "id": "responsibility_002",
+            "type": "职责",
+            "description": "确保系统的可扩展性、可靠性和性能",
+            "kg_id": "LOCAL_32707e9f",
+            "name": "responsibility_002"
+        },
+        {
+            "id": "responsibility_003",
+            "type": "职责",
+            "description": "制定数据存储、处理和分析的技术路线图",
+            "kg_id": "LOCAL_eda27e3a",
+            "name": "responsibility_003"
+        },
+        {
+            "id": "responsibility_004",
+            "type": "职责",
+            "description": "设计和实现数据平台相关功能",
+            "kg_id": "LOCAL_70b045fb",
+            "name": "responsibility_004"
+        },
+        {
+            "id": "tech_001",
+            "type": "技术概念",
+            "description": "大数据解决方案",
+            "kg_id": "LOCAL_bc487982",
+            "name": "tech_001"
+        },
+        {
+            "id": "tech_002",
+            "type": "技术概念",
+            "description": "系统可扩展性",
+            "kg_id": "LOCAL_cbae90d6",
+            "name": "tech_002"
+        },
+        {
+            "id": "tech_003",
+            "type": "技术概念",
+            "description": "系统可靠性",
+            "kg_id": "LOCAL_c7c84669",
+            "name": "tech_003"
+        },
+        {
+            "id": "tech_004",
+            "type": "技术概念",
+            "description": "系统性能",
+            "kg_id": "LOCAL_b6d1332d",
+            "name": "tech_004"
+        },
+        {
+            "id": "tech_005",
+            "type": "技术概念",
+            "description": "数据存储",
+            "kg_id": "LOCAL_c66b9c56",
+            "name": "tech_005"
+        },
+        {
+            "id": "tech_006",
+            "type": "技术概念",
+            "description": "数据处理",
+            "kg_id": "LOCAL_73a2753c",
+            "name": "tech_006"
+        },
+        {
+            "id": "tech_007",
+            "type": "技术概念",
+            "description": "数据分析",
+            "kg_id": "LOCAL_82c46568",
+            "name": "tech_007"
+        },
+        {
+            "id": "tech_008",
+            "type": "技术概念",
+            "description": "技术路线图",
+            "kg_id": "LOCAL_8dc36b50",
+            "name": "tech_008"
+        },
+        {
+            "id": "tech_009",
+            "type": "技术概念",
+            "description": "数据平台",
+            "kg_id": "LOCAL_1a9bcc0b",
+            "name": "tech_009"
+        }
+    ],
+    "relations": [
+        {
+            "source": "company_001",
+            "target": "position_001",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_0b7c6689",
+            "target_kg_id": "LOCAL_c648f70d"
+        },
+        {
+            "source": "position_001",
+            "target": "responsibility_001",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_436bd5f2"
+        },
+        {
+            "source": "position_001",
+            "target": "responsibility_002",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_32707e9f"
+        },
+        {
+            "source": "position_001",
+            "target": "responsibility_003",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_eda27e3a"
+        },
+        {
+            "source": "position_001",
+            "target": "responsibility_004",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_c648f70d",
+            "target_kg_id": "LOCAL_70b045fb"
+        },
+        {
+            "source": "responsibility_001",
+            "target": "tech_001",
+            "relation_type": "涉及",
+            "source_kg_id": "LOCAL_436bd5f2",
+            "target_kg_id": "LOCAL_bc487982"
+        },
+        {
+            "source": "responsibility_002",
+            "target": "tech_002",
+            "relation_type": "关注",
+            "source_kg_id": "LOCAL_32707e9f",
+            "target_kg_id": "LOCAL_cbae90d6"
+        },
+        {
+            "source": "responsibility_002",
+            "target": "tech_003",
+            "relation_type": "关注",
+            "source_kg_id": "LOCAL_32707e9f",
+            "target_kg_id": "LOCAL_c7c84669"
+        },
+        {
+            "source": "responsibility_002",
+            "target": "tech_004",
+            "relation_type": "关注",
+            "source_kg_id": "LOCAL_32707e9f",
+            "target_kg_id": "LOCAL_b6d1332d"
+        },
+        {
+            "source": "responsibility_003",
+            "target": "tech_005",
+            "relation_type": "涉及",
+            "source_kg_id": "LOCAL_eda27e3a",
+            "target_kg_id": "LOCAL_c66b9c56"
+        },
+        {
+            "source": "responsibility_003",
+            "target": "tech_006",
+            "relation_type": "涉及",
+            "source_kg_id": "LOCAL_eda27e3a",
+            "target_kg_id": "LOCAL_73a2753c"
+        },
+        {
+            "source": "responsibility_003",
+            "target": "tech_007",
+            "relation_type": "涉及",
+            "source_kg_id": "LOCAL_eda27e3a",
+            "target_kg_id": "LOCAL_82c46568"
+        },
+        {
+            "source": "responsibility_003",
+            "target": "tech_008",
+            "relation_type": "制定",
+            "source_kg_id": "LOCAL_eda27e3a",
+            "target_kg_id": "LOCAL_8dc36b50"
+        },
+        {
+            "source": "responsibility_004",
+            "target": "tech_009",
+            "relation_type": "实现",
+            "source_kg_id": "LOCAL_70b045fb",
+            "target_kg_id": "LOCAL_1a9bcc0b"
+        }
+    ]
+}

@@ -1,0 +1,125 @@
+{
+    "entities": [
+        {
+            "id": "huawei_suzhou",
+            "type": "公司",
+            "description": "华为技术有限公司（苏州）",
+            "kg_id": "LOCAL_8fbe8b0e",
+            "name": "huawei_suzhou"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "大数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "data_integration",
+            "type": "工作职责",
+            "description": "数据集成交付",
+            "kg_id": "LOCAL_e63fe806",
+            "name": "data_integration"
+        },
+        {
+            "id": "data_platform_design",
+            "type": "工作职责",
+            "description": "客户数据中台/数据平台/数据湖方案设计",
+            "kg_id": "LOCAL_7b78bc75",
+            "name": "data_platform_design"
+        },
+        {
+            "id": "data_governance",
+            "type": "工作职责",
+            "description": "数据治理相关工作",
+            "kg_id": "LOCAL_5d485230",
+            "name": "data_governance"
+        },
+        {
+            "id": "bigdata_platform",
+            "type": "技能要求",
+            "description": "大数据平台建设",
+            "kg_id": "LOCAL_5e70ef03",
+            "name": "bigdata_platform"
+        },
+        {
+            "id": "experience_requirement",
+            "type": "经验要求",
+            "description": "5-10年相关经验",
+            "kg_id": "LOCAL_a3dcc6d1",
+            "name": "experience_requirement"
+        },
+        {
+            "id": "education_requirement",
+            "type": "学历要求",
+            "description": "本科及以上学历",
+            "kg_id": "LOCAL_45560d64",
+            "name": "education_requirement"
+        },
+        {
+            "id": "salary_range",
+            "type": "薪资范围",
+            "description": "25-50K·16薪",
+            "kg_id": "LOCAL_f997dffc",
+            "name": "salary_range"
+        }
+    ],
+    "relations": [
+        {
+            "source": "huawei_suzhou",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_8fbe8b0e",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_integration",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_e63fe806"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_platform_design",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_7b78bc75"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5d485230"
+        },
+        {
+            "source": "data_architect",
+            "target": "bigdata_platform",
+            "relation_type": "需要熟悉",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5e70ef03"
+        },
+        {
+            "source": "data_architect",
+            "target": "experience_requirement",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a3dcc6d1"
+        },
+        {
+            "source": "data_architect",
+            "target": "education_requirement",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_45560d64"
+        },
+        {
+            "source": "data_architect",
+            "target": "salary_range",
+            "relation_type": "薪资为",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_f997dffc"
+        }
+    ]
+}

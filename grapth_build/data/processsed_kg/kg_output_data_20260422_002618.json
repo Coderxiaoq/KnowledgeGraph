@@ -1,0 +1,797 @@
+{
+    "entities": [
+        {
+            "id": "数据架构师",
+            "type": "职位",
+            "description": "负责企业级数据平台架构设计、数据治理、数据仓库建设等核心岗位",
+            "kg_id": "LOCAL_9e539235",
+            "name": "数据架构师"
+        },
+        {
+            "id": "大数据架构师",
+            "type": "职位",
+            "description": "专注于大数据中台、数据湖、流批一体等大数据技术架构设计",
+            "kg_id": "LOCAL_a629e4df",
+            "name": "大数据架构师"
+        },
+        {
+            "id": "AI架构师",
+            "type": "职位",
+            "description": "负责大模型、生成式AI、多模态数据等AI技术架构设计",
+            "kg_id": "LOCAL_a24a94b6",
+            "name": "AI架构师"
+        },
+        {
+            "id": "解决方案架构师",
+            "type": "职位",
+            "description": "负责客户需求分析、技术方案设计与落地交付",
+            "kg_id": "LOCAL_a60359bf",
+            "name": "解决方案架构师"
+        },
+        {
+            "id": "交付架构师",
+            "type": "职位",
+            "description": "负责项目交付、系统实施与客户对接",
+            "kg_id": "LOCAL_e3287f7e",
+            "name": "交付架构师"
+        },
+        {
+            "id": "华为",
+            "type": "公司",
+            "description": "全球领先的ICT基础设施和智能终端提供商",
+            "kg_id": "LOCAL_e40234e2",
+            "name": "华为"
+        },
+        {
+            "id": "阿里云智能",
+            "type": "公司",
+            "description": "阿里巴巴集团云计算与人工智能业务板块",
+            "kg_id": "LOCAL_881a3537",
+            "name": "阿里云智能"
+        },
+        {
+            "id": "腾讯",
+            "type": "公司",
+            "description": "中国领先的互联网增值服务提供商",
+            "kg_id": "LOCAL_b6cc2dd4",
+            "name": "腾讯"
+        },
+        {
+            "id": "字节跳动",
+            "type": "公司",
+            "description": "全球领先的互联网科技公司，旗下有抖音、TikTok等产品",
+            "kg_id": "LOCAL_243ce860",
+            "name": "字节跳动"
+        },
+        {
+            "id": "美团",
+            "type": "公司",
+            "description": "中国领先的生活服务电子商务平台",
+            "kg_id": "LOCAL_290a7cbc",
+            "name": "美团"
+        },
+        {
+            "id": "招商银行",
+            "type": "公司",
+            "description": "中国第一家完全由企业法人持股的股份制商业银行",
+            "kg_id": "LOCAL_9e68008c",
+            "name": "招商银行"
+        },
+        {
+            "id": "平安银行",
+            "type": "公司",
+            "description": "中国平安集团旗下全国性股份制商业银行",
+            "kg_id": "LOCAL_0abfcf61",
+            "name": "平安银行"
+        },
+        {
+            "id": "中国工商银行",
+            "type": "公司",
+            "description": "中国最大的国有商业银行之一",
+            "kg_id": "LOCAL_57a015cf",
+            "name": "中国工商银行"
+        },
+        {
+            "id": "DJI大疆",
+            "type": "公司",
+            "description": "全球领先的无人机制造商",
+            "kg_id": "LOCAL_6a283005",
+            "name": "DJI大疆"
+        },
+        {
+            "id": "蚂蚁集团",
+            "type": "公司",
+            "description": "支付宝母公司，领先的数字支付与金融科技平台",
+            "kg_id": "LOCAL_eb3cc531",
+            "name": "蚂蚁集团"
+        },
+        {
+            "id": "金融行业",
+            "type": "行业",
+            "description": "包括银行、证券、保险等金融服务领域",
+            "kg_id": "LOCAL_12844276",
+            "name": "金融行业"
+        },
+        {
+            "id": "互联网行业",
+            "type": "行业",
+            "description": "包括互联网平台、电商、社交、内容等领域",
+            "kg_id": "LOCAL_eeb613c5",
+            "name": "互联网行业"
+        },
+        {
+            "id": "制造业",
+            "type": "行业",
+            "description": "包括传统制造、智能制造、汽车制造等领域",
+            "kg_id": "LOCAL_ca6ca0a4",
+            "name": "制造业"
+        },
+        {
+            "id": "医疗医药",
+            "type": "行业",
+            "description": "包括医疗设备、生物医药、临床研发等领域",
+            "kg_id": "LOCAL_3c601408",
+            "name": "医疗医药"
+        },
+        {
+            "id": "物流行业",
+            "type": "行业",
+            "description": "包括货运、快递、供应链管理等领域",
+            "kg_id": "LOCAL_a360a156",
+            "name": "物流行业"
+        },
+        {
+            "id": "数据湖仓一体",
+            "type": "技术",
+            "description": "融合数据湖和数据仓库的统一数据架构",
+            "kg_id": "LOCAL_bc02e267",
+            "name": "数据湖仓一体"
+        },
+        {
+            "id": "数据治理",
+            "type": "技术",
+            "description": "数据质量管理、数据标准、元数据管理等数据管理体系",
+            "kg_id": "LOCAL_9f15dfaa",
+            "name": "数据治理"
+        },
+        {
+            "id": "大数据中台",
+            "type": "技术",
+            "description": "企业级大数据能力共享平台",
+            "kg_id": "LOCAL_1315b830",
+            "name": "大数据中台"
+        },
+        {
+            "id": "数据仓库",
+            "type": "技术",
+            "description": "用于存储和分析结构化数据的集中式数据存储系统",
+            "kg_id": "LOCAL_69d34896",
+            "name": "数据仓库"
+        },
+        {
+            "id": "大模型",
+            "type": "技术",
+            "description": "大规模预训练人工智能模型，如GPT、文心一言等",
+            "kg_id": "LOCAL_840c3345",
+            "name": "大模型"
+        },
+        {
+            "id": "实时计算",
+            "type": "技术",
+            "description": "实时数据处理与流式计算技术",
+            "kg_id": "LOCAL_fa433264",
+            "name": "实时计算"
+        },
+        {
+            "id": "流批一体",
+            "type": "技术",
+            "description": "流式计算和批处理统一的计算架构",
+            "kg_id": "LOCAL_ecdd1039",
+            "name": "流批一体"
+        },
+        {
+            "id": "云原生",
+            "type": "技术",
+            "description": "基于云计算原生架构的应用开发与部署模式",
+            "kg_id": "LOCAL_ee001b19",
+            "name": "云原生"
+        },
+        {
+            "id": "数据安全",
+            "type": "技术",
+            "description": "数据保护、隐私计算、数据脱敏等安全技术",
+            "kg_id": "LOCAL_0cdc5e83",
+            "name": "数据安全"
+        },
+        {
+            "id": "ETL",
+            "type": "技术",
+            "description": "数据抽取、转换、加载的数据处理流程",
+            "kg_id": "LOCAL_b5e9c3bb",
+            "name": "ETL"
+        },
+        {
+            "id": "Hadoop",
+            "type": "技术",
+            "description": "开源分布式计算框架",
+            "kg_id": "LOCAL_38de1fe7",
+            "name": "Hadoop"
+        },
+        {
+            "id": "微服务",
+            "type": "技术",
+            "description": "将应用拆分为小型独立服务的架构模式",
+            "kg_id": "LOCAL_0f0603a3",
+            "name": "微服务"
+        },
+        {
+            "id": "北京",
+            "type": "地点",
+            "description": "中国首都，科技与金融中心",
+            "kg_id": "LOCAL_f3179df0",
+            "name": "北京"
+        },
+        {
+            "id": "上海",
+            "type": "地点",
+            "description": "中国金融与科技中心",
+            "kg_id": "LOCAL_4ec07560",
+            "name": "上海"
+        },
+        {
+            "id": "深圳",
+            "type": "地点",
+            "description": "中国科技创新中心",
+            "kg_id": "LOCAL_9fd7bf19",
+            "name": "深圳"
+        },
+        {
+            "id": "杭州",
+            "type": "地点",
+            "description": "中国互联网与电商中心",
+            "kg_id": "LOCAL_8b567851",
+            "name": "杭州"
+        },
+        {
+            "id": "广州",
+            "type": "地点",
+            "description": "中国南方经济中心",
+            "kg_id": "LOCAL_5d8d4a98",
+            "name": "广州"
+        },
+        {
+            "id": "成都",
+            "type": "地点",
+            "description": "中国西部科技中心",
+            "kg_id": "LOCAL_b22312b4",
+            "name": "成都"
+        },
+        {
+            "id": "武汉",
+            "type": "地点",
+            "description": "中国中部科技与教育中心",
+            "kg_id": "LOCAL_37a1fc15",
+            "name": "武汉"
+        },
+        {
+            "id": "15-23k",
+            "type": "薪资",
+            "description": "月薪1.5万-2.3万元",
+            "kg_id": "LOCAL_33a25959",
+            "name": "15-23k"
+        },
+        {
+            "id": "30-50k",
+            "type": "薪资",
+            "description": "月薪3万-5万元",
+            "kg_id": "LOCAL_fba9b702",
+            "name": "30-50k"
+        },
+        {
+            "id": "50-80k",
+            "type": "薪资",
+            "description": "月薪5万-8万元",
+            "kg_id": "LOCAL_2242054f",
+            "name": "50-80k"
+        },
+        {
+            "id": "80-110k",
+            "type": "薪资",
+            "description": "月薪8万-11万元",
+            "kg_id": "LOCAL_1398da3f",
+            "name": "80-110k"
+        },
+        {
+            "id": "300-500k",
+            "type": "薪资",
+            "description": "月薪30万-50万元（高端AI岗位）",
+            "kg_id": "LOCAL_c4911358",
+            "name": "300-500k"
+        },
+        {
+            "id": "本科",
+            "type": "学历",
+            "description": "大学本科学历",
+            "kg_id": "LOCAL_d095a505",
+            "name": "本科"
+        },
+        {
+            "id": "硕士",
+            "type": "学历",
+            "description": "硕士研究生学历",
+            "kg_id": "LOCAL_3fc6b43a",
+            "name": "硕士"
+        },
+        {
+            "id": "博士",
+            "type": "学历",
+            "description": "博士研究生学历",
+            "kg_id": "LOCAL_e1a11dd0",
+            "name": "博士"
+        },
+        {
+            "id": "2-5年",
+            "type": "经验",
+            "description": "2-5年工作经验",
+            "kg_id": "LOCAL_1db20f80",
+            "name": "2-5年"
+        },
+        {
+            "id": "5-10年",
+            "type": "经验",
+            "description": "5-10年工作经验",
+            "kg_id": "LOCAL_dd398522",
+            "name": "5-10年"
+        },
+        {
+            "id": "10年以上",
+            "type": "经验",
+            "description": "10年以上工作经验",
+            "kg_id": "LOCAL_b29e235f",
+            "name": "10年以上"
+        }
+    ],
+    "relations": [
+        {
+            "source": "华为",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_e40234e2",
+            "target_kg_id": "LOCAL_9e539235"
+        },
+        {
+            "source": "华为",
+            "target": "大数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_e40234e2",
+            "target_kg_id": "LOCAL_a629e4df"
+        },
+        {
+            "source": "华为",
+            "target": "AI架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_e40234e2",
+            "target_kg_id": "LOCAL_a24a94b6"
+        },
+        {
+            "source": "阿里云智能",
+            "target": "交付架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_881a3537",
+            "target_kg_id": "LOCAL_e3287f7e"
+        },
+        {
+            "source": "阿里云智能",
+            "target": "解决方案架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_881a3537",
+            "target_kg_id": "LOCAL_a60359bf"
+        },
+        {
+            "source": "阿里云智能",
+            "target": "AI架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_881a3537",
+            "target_kg_id": "LOCAL_a24a94b6"
+        },
+        {
+            "source": "腾讯",
+            "target": "产品架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_b6cc2dd4",
+            "target_kg_id": "产品架构师"
+        },
+        {
+            "source": "腾讯",
+            "target": "解决方案架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_b6cc2dd4",
+            "target_kg_id": "LOCAL_a60359bf"
+        },
+        {
+            "source": "字节跳动",
+            "target": "大数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_243ce860",
+            "target_kg_id": "LOCAL_a629e4df"
+        },
+        {
+            "source": "字节跳动",
+            "target": "基础架构架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_243ce860",
+            "target_kg_id": "基础架构架构师"
+        },
+        {
+            "source": "美团",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_290a7cbc",
+            "target_kg_id": "LOCAL_9e539235"
+        },
+        {
+            "source": "美团",
+            "target": "数据安全架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_290a7cbc",
+            "target_kg_id": "数据安全架构师"
+        },
+        {
+            "source": "招商银行",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_9e68008c",
+            "target_kg_id": "LOCAL_9e539235"
+        },
+        {
+            "source": "招商银行",
+            "target": "数字化运营架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_9e68008c",
+            "target_kg_id": "数字化运营架构师"
+        },
+        {
+            "source": "平安银行",
+            "target": "架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_0abfcf61",
+            "target_kg_id": "架构师"
+        },
+        {
+            "source": "中国工商银行",
+            "target": "数据中心架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_57a015cf",
+            "target_kg_id": "数据中心架构师"
+        },
+        {
+            "source": "DJI大疆",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_6a283005",
+            "target_kg_id": "LOCAL_9e539235"
+        },
+        {
+            "source": "蚂蚁集团",
+            "target": "AI架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_eb3cc531",
+            "target_kg_id": "LOCAL_a24a94b6"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据湖仓一体",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_bc02e267"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_9f15dfaa"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据仓库",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_69d34896"
+        },
+        {
+            "source": "数据架构师",
+            "target": "ETL",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_b5e9c3bb"
+        },
+        {
+            "source": "大数据架构师",
+            "target": "大数据中台",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a629e4df",
+            "target_kg_id": "LOCAL_1315b830"
+        },
+        {
+            "source": "大数据架构师",
+            "target": "实时计算",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a629e4df",
+            "target_kg_id": "LOCAL_fa433264"
+        },
+        {
+            "source": "大数据架构师",
+            "target": "流批一体",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a629e4df",
+            "target_kg_id": "LOCAL_ecdd1039"
+        },
+        {
+            "source": "大数据架构师",
+            "target": "Hadoop",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a629e4df",
+            "target_kg_id": "LOCAL_38de1fe7"
+        },
+        {
+            "source": "AI架构师",
+            "target": "大模型",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_840c3345"
+        },
+        {
+            "source": "AI架构师",
+            "target": "数据安全",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_0cdc5e83"
+        },
+        {
+            "source": "解决方案架构师",
+            "target": "云原生",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a60359bf",
+            "target_kg_id": "LOCAL_ee001b19"
+        },
+        {
+            "source": "解决方案架构师",
+            "target": "微服务",
+            "relation_type": "需要技能",
+            "source_kg_id": "LOCAL_a60359bf",
+            "target_kg_id": "LOCAL_0f0603a3"
+        },
+        {
+            "source": "华为",
+            "target": "互联网行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_e40234e2",
+            "target_kg_id": "LOCAL_eeb613c5"
+        },
+        {
+            "source": "阿里云智能",
+            "target": "互联网行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_881a3537",
+            "target_kg_id": "LOCAL_eeb613c5"
+        },
+        {
+            "source": "腾讯",
+            "target": "互联网行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_b6cc2dd4",
+            "target_kg_id": "LOCAL_eeb613c5"
+        },
+        {
+            "source": "字节跳动",
+            "target": "互联网行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_243ce860",
+            "target_kg_id": "LOCAL_eeb613c5"
+        },
+        {
+            "source": "美团",
+            "target": "互联网行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_290a7cbc",
+            "target_kg_id": "LOCAL_eeb613c5"
+        },
+        {
+            "source": "招商银行",
+            "target": "金融行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_9e68008c",
+            "target_kg_id": "LOCAL_12844276"
+        },
+        {
+            "source": "平安银行",
+            "target": "金融行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_0abfcf61",
+            "target_kg_id": "LOCAL_12844276"
+        },
+        {
+            "source": "中国工商银行",
+            "target": "金融行业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_57a015cf",
+            "target_kg_id": "LOCAL_12844276"
+        },
+        {
+            "source": "DJI大疆",
+            "target": "制造业",
+            "relation_type": "属于行业",
+            "source_kg_id": "LOCAL_6a283005",
+            "target_kg_id": "LOCAL_ca6ca0a4"
+        },
+        {
+            "source": "数据架构师",
+            "target": "北京",
+            "relation_type": "工作地点",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_f3179df0"
+        },
+        {
+            "source": "数据架构师",
+            "target": "上海",
+            "relation_type": "工作地点",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_4ec07560"
+        },
+        {
+            "source": "数据架构师",
+            "target": "深圳",
+            "relation_type": "工作地点",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_9fd7bf19"
+        },
+        {
+            "source": "数据架构师",
+            "target": "杭州",
+            "relation_type": "工作地点",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_8b567851"
+        },
+        {
+            "source": "数据架构师",
+            "target": "广州",
+            "relation_type": "工作地点",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_5d8d4a98"
+        },
+        {
+            "source": "数据架构师",
+            "target": "15-23k",
+            "relation_type": "薪资范围",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_33a25959"
+        },
+        {
+            "source": "数据架构师",
+            "target": "30-50k",
+            "relation_type": "薪资范围",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_fba9b702"
+        },
+        {
+            "source": "数据架构师",
+            "target": "50-80k",
+            "relation_type": "薪资范围",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_2242054f"
+        },
+        {
+            "source": "AI架构师",
+            "target": "80-110k",
+            "relation_type": "薪资范围",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_1398da3f"
+        },
+        {
+            "source": "AI架构师",
+            "target": "300-500k",
+            "relation_type": "薪资范围",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_c4911358"
+        },
+        {
+            "source": "数据架构师",
+            "target": "本科",
+            "relation_type": "学历要求",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_d095a505"
+        },
+        {
+            "source": "数据架构师",
+            "target": "硕士",
+            "relation_type": "学历要求",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_3fc6b43a"
+        },
+        {
+            "source": "AI架构师",
+            "target": "硕士",
+            "relation_type": "学历要求",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_3fc6b43a"
+        },
+        {
+            "source": "数据架构师",
+            "target": "2-5年",
+            "relation_type": "经验要求",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_1db20f80"
+        },
+        {
+            "source": "数据架构师",
+            "target": "5-10年",
+            "relation_type": "经验要求",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_dd398522"
+        },
+        {
+            "source": "数据架构师",
+            "target": "10年以上",
+            "relation_type": "经验要求",
+            "source_kg_id": "LOCAL_9e539235",
+            "target_kg_id": "LOCAL_b29e235f"
+        },
+        {
+            "source": "AI架构师",
+            "target": "5-10年",
+            "relation_type": "经验要求",
+            "source_kg_id": "LOCAL_a24a94b6",
+            "target_kg_id": "LOCAL_dd398522"
+        },
+        {
+            "source": "金融行业",
+            "target": "数据安全",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_12844276",
+            "target_kg_id": "LOCAL_0cdc5e83"
+        },
+        {
+            "source": "金融行业",
+            "target": "数据治理",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_12844276",
+            "target_kg_id": "LOCAL_9f15dfaa"
+        },
+        {
+            "source": "互联网行业",
+            "target": "大模型",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_eeb613c5",
+            "target_kg_id": "LOCAL_840c3345"
+        },
+        {
+            "source": "互联网行业",
+            "target": "实时计算",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_eeb613c5",
+            "target_kg_id": "LOCAL_fa433264"
+        },
+        {
+            "source": "制造业",
+            "target": "数据湖仓一体",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_ca6ca0a4",
+            "target_kg_id": "LOCAL_bc02e267"
+        },
+        {
+            "source": "医疗医药",
+            "target": "数据仓库",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_3c601408",
+            "target_kg_id": "LOCAL_69d34896"
+        },
+        {
+            "source": "物流行业",
+            "target": "实时计算",
+            "relation_type": "重点关注",
+            "source_kg_id": "LOCAL_a360a156",
+            "target_kg_id": "LOCAL_fa433264"
+        }
+    ]
+}

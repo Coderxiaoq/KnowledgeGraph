@@ -1,0 +1,139 @@
+{
+    "entities": [
+        {
+            "id": "京东",
+            "type": "公司",
+            "description": "招聘数据架构师岗位的公司",
+            "kg_id": "LOCAL_5e146c58",
+            "name": "京东"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "京东招聘的核心技术岗位",
+            "kg_id": "LOCAL_3e3d6237",
+            "name": "数据架构师"
+        },
+        {
+            "id": "核心系统架构设计",
+            "type": "工作职责",
+            "description": "负责核心系统架构设计与优化",
+            "kg_id": "LOCAL_e7bb8f8f",
+            "name": "核心系统架构设计"
+        },
+        {
+            "id": "供应链库存领域系统研发",
+            "type": "工作职责",
+            "description": "供应链库存领域系统研发相关工作",
+            "kg_id": "LOCAL_81900250",
+            "name": "供应链库存领域系统研发"
+        },
+        {
+            "id": "数据平台建设",
+            "type": "工作职责",
+            "description": "参与数据平台建设和治理",
+            "kg_id": "LOCAL_a62f7ac3",
+            "name": "数据平台建设"
+        },
+        {
+            "id": "数据治理",
+            "type": "工作职责",
+            "description": "参与数据平台建设和治理",
+            "kg_id": "LOCAL_2dd510c9",
+            "name": "数据治理"
+        },
+        {
+            "id": "后端开发经验",
+            "type": "技能要求",
+            "description": "7年以上后端开发经验",
+            "kg_id": "LOCAL_23eee1ed",
+            "name": "后端开发经验"
+        },
+        {
+            "id": "技术风险治理",
+            "type": "技能要求",
+            "description": "技术风险治理相关实践经验",
+            "kg_id": "LOCAL_56333c40",
+            "name": "技术风险治理"
+        },
+        {
+            "id": "架构升级",
+            "type": "技能要求",
+            "description": "架构升级相关实践经验",
+            "kg_id": "LOCAL_b8cd8fab",
+            "name": "架构升级"
+        },
+        {
+            "id": "本科及以上学历",
+            "type": "学历要求",
+            "description": "本科及以上学历",
+            "kg_id": "LOCAL_05a6c5e7",
+            "name": "本科及以上学历"
+        }
+    ],
+    "relations": [
+        {
+            "source": "京东",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_5e146c58",
+            "target_kg_id": "LOCAL_3e3d6237"
+        },
+        {
+            "source": "数据架构师",
+            "target": "核心系统架构设计",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_e7bb8f8f"
+        },
+        {
+            "source": "数据架构师",
+            "target": "供应链库存领域系统研发",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_81900250"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据平台建设",
+            "relation_type": "参与",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_a62f7ac3"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理",
+            "relation_type": "参与",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_2dd510c9"
+        },
+        {
+            "source": "数据架构师",
+            "target": "后端开发经验",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_23eee1ed"
+        },
+        {
+            "source": "数据架构师",
+            "target": "技术风险治理",
+            "relation_type": "优先考虑",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_56333c40"
+        },
+        {
+            "source": "数据架构师",
+            "target": "架构升级",
+            "relation_type": "优先考虑",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_b8cd8fab"
+        },
+        {
+            "source": "数据架构师",
+            "target": "本科及以上学历",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_3e3d6237",
+            "target_kg_id": "LOCAL_05a6c5e7"
+        }
+    ]
+}

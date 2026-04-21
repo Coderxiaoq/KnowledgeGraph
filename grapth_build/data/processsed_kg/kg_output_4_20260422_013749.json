@@ -1,0 +1,125 @@
+{
+    "entities": [
+        {
+            "id": "iReadyIT",
+            "type": "公司",
+            "description": "招聘数据架构师的公司",
+            "kg_id": "LOCAL_3b6f74c6",
+            "name": "iReadyIT"
+        },
+        {
+            "id": "数据架构师",
+            "type": "岗位",
+            "description": "负责数据体系规划和数据治理、数据仓库架构设计的岗位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "数据体系规划",
+            "type": "职责",
+            "description": "负责数据体系的规划工作",
+            "kg_id": "LOCAL_7400dbc7",
+            "name": "数据体系规划"
+        },
+        {
+            "id": "数据治理",
+            "type": "职责",
+            "description": "负责数据治理相关工作",
+            "kg_id": "LOCAL_1517d2ac",
+            "name": "数据治理"
+        },
+        {
+            "id": "数据仓库",
+            "type": "技术概念",
+            "description": "用于存储和管理数据的仓库系统",
+            "kg_id": "LOCAL_68c0cda5",
+            "name": "数据仓库"
+        },
+        {
+            "id": "架构设计",
+            "type": "职责",
+            "description": "负责数据仓库的架构设计工作",
+            "kg_id": "LOCAL_8bd8d461",
+            "name": "架构设计"
+        },
+        {
+            "id": "技术方案编写",
+            "type": "职责",
+            "description": "负责数据仓库和数据集市相关工作的技术方案编写",
+            "kg_id": "LOCAL_460c9e07",
+            "name": "技术方案编写"
+        },
+        {
+            "id": "数据模型设计",
+            "type": "职责",
+            "description": "负责数据仓库的数据模型设计",
+            "kg_id": "LOCAL_96dda330",
+            "name": "数据模型设计"
+        },
+        {
+            "id": "数据整合",
+            "type": "职责",
+            "description": "负责数据整合相关工作",
+            "kg_id": "LOCAL_e79ddac6",
+            "name": "数据整合"
+        }
+    ],
+    "relations": [
+        {
+            "source": "iReadyIT",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_3b6f74c6",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据体系规划",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_7400dbc7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_1517d2ac"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据仓库",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_68c0cda5"
+        },
+        {
+            "source": "数据架构师",
+            "target": "架构设计",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_8bd8d461"
+        },
+        {
+            "source": "数据架构师",
+            "target": "技术方案编写",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_460c9e07"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据模型设计",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_96dda330"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据整合",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_e79ddac6"
+        }
+    ]
+}

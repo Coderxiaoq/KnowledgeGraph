@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "id": "jd_group",
+            "type": "公司",
+            "description": "京东集团",
+            "kg_id": "LOCAL_92c7030b",
+            "name": "jd_group"
+        },
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "core_system_architecture",
+            "type": "职责",
+            "description": "核心系统架构设计与优化",
+            "kg_id": "LOCAL_b445fc53",
+            "name": "core_system_architecture"
+        },
+        {
+            "id": "supply_chain_system_dev",
+            "type": "职责",
+            "description": "供应链库存领域系统研发相关工作",
+            "kg_id": "LOCAL_b327eac8",
+            "name": "supply_chain_system_dev"
+        },
+        {
+            "id": "backend_dev_experience",
+            "type": "要求",
+            "description": "7年以上后端开发经验",
+            "kg_id": "LOCAL_6637f6ab",
+            "name": "backend_dev_experience"
+        },
+        {
+            "id": "architecture_design_experience",
+            "type": "要求",
+            "description": "5年以上核心系统架构设计经验",
+            "kg_id": "LOCAL_5d69ad4b",
+            "name": "architecture_design_experience"
+        }
+    ],
+    "relations": [
+        {
+            "source": "jd_group",
+            "target": "data_architect",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_92c7030b",
+            "target_kg_id": "LOCAL_b76b153c"
+        },
+        {
+            "source": "data_architect",
+            "target": "core_system_architecture",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_b445fc53"
+        },
+        {
+            "source": "data_architect",
+            "target": "supply_chain_system_dev",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_b327eac8"
+        },
+        {
+            "source": "data_architect",
+            "target": "backend_dev_experience",
+            "relation_type": "要求",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_6637f6ab"
+        },
+        {
+            "source": "data_architect",
+            "target": "architecture_design_experience",
+            "relation_type": "要求",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5d69ad4b"
+        }
+    ]
+}

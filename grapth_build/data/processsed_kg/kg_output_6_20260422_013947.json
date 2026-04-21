@@ -1,0 +1,300 @@
+{
+    "entities": [
+        {
+            "id": "猎聘",
+            "type": "招聘平台",
+            "description": "招聘网站平台",
+            "kg_id": "LOCAL_01063c6e",
+            "name": "猎聘"
+        },
+        {
+            "id": "成都某企业",
+            "type": "公司",
+            "description": "位于成都的招聘企业",
+            "kg_id": "LOCAL_4dd05294",
+            "name": "成都某企业"
+        },
+        {
+            "id": "数据架构师",
+            "type": "职位",
+            "description": "负责数据架构设计与实施的技术岗位",
+            "kg_id": "LOCAL_09e880b7",
+            "name": "数据架构师"
+        },
+        {
+            "id": "企业级数据架构",
+            "type": "技术概念",
+            "description": "企业级的数据架构设计",
+            "kg_id": "LOCAL_1ba10299",
+            "name": "企业级数据架构"
+        },
+        {
+            "id": "数据仓库",
+            "type": "技术概念",
+            "description": "用于存储和管理数据的仓库系统",
+            "kg_id": "LOCAL_68c0cda5",
+            "name": "数据仓库"
+        },
+        {
+            "id": "数据湖",
+            "type": "技术概念",
+            "description": "大规模数据存储和处理平台",
+            "kg_id": "LOCAL_539d4415",
+            "name": "数据湖"
+        },
+        {
+            "id": "数据治理规范",
+            "type": "技术概念",
+            "description": "数据管理的规范和标准",
+            "kg_id": "LOCAL_49782a6e",
+            "name": "数据治理规范"
+        },
+        {
+            "id": "数据质量",
+            "type": "技术概念",
+            "description": "数据的准确性和完整性指标",
+            "kg_id": "LOCAL_622637cc",
+            "name": "数据质量"
+        },
+        {
+            "id": "数据处理流程",
+            "type": "技术概念",
+            "description": "数据处理的流程和步骤",
+            "kg_id": "LOCAL_d22b8450",
+            "name": "数据处理流程"
+        },
+        {
+            "id": "ETL任务",
+            "type": "技术概念",
+            "description": "数据抽取、转换、加载任务",
+            "kg_id": "LOCAL_d9d83d01",
+            "name": "ETL任务"
+        },
+        {
+            "id": "PB级数据处理",
+            "type": "技术概念",
+            "description": "处理PB级别的大数据量",
+            "kg_id": "LOCAL_da4e4e22",
+            "name": "PB级数据处理"
+        },
+        {
+            "id": "业务部门",
+            "type": "组织",
+            "description": "公司的业务相关部门",
+            "kg_id": "LOCAL_2cd69a31",
+            "name": "业务部门"
+        },
+        {
+            "id": "计算机相关专业",
+            "type": "学科",
+            "description": "计算机科学相关专业",
+            "kg_id": "LOCAL_38d6ae90",
+            "name": "计算机相关专业"
+        },
+        {
+            "id": "大数据架构",
+            "type": "技术概念",
+            "description": "大数据系统的架构设计",
+            "kg_id": "LOCAL_f9580e81",
+            "name": "大数据架构"
+        },
+        {
+            "id": "Hadoop",
+            "type": "技术工具",
+            "description": "分布式计算框架",
+            "kg_id": "LOCAL_ae51cafd",
+            "name": "Hadoop"
+        },
+        {
+            "id": "Spark",
+            "type": "技术工具",
+            "description": "分布式计算框架",
+            "kg_id": "LOCAL_4e052335",
+            "name": "Spark"
+        },
+        {
+            "id": "Flink",
+            "type": "技术工具",
+            "description": "分布式计算框架",
+            "kg_id": "LOCAL_1365aa21",
+            "name": "Flink"
+        },
+        {
+            "id": "分布式计算框架",
+            "type": "技术概念",
+            "description": "分布式计算的技术框架",
+            "kg_id": "LOCAL_228f54b3",
+            "name": "分布式计算框架"
+        },
+        {
+            "id": "金融",
+            "type": "行业",
+            "description": "金融行业",
+            "kg_id": "LOCAL_53def647",
+            "name": "金融"
+        },
+        {
+            "id": "电商",
+            "type": "行业",
+            "description": "电子商务行业",
+            "kg_id": "LOCAL_e482f503",
+            "name": "电商"
+        },
+        {
+            "id": "数据中台",
+            "type": "技术概念",
+            "description": "企业级数据管理平台",
+            "kg_id": "LOCAL_2bcb2968",
+            "name": "数据中台"
+        }
+    ],
+    "relations": [
+        {
+            "source": "猎聘",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_01063c6e",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "成都某企业",
+            "target": "数据架构师",
+            "relation_type": "招聘",
+            "source_kg_id": "LOCAL_4dd05294",
+            "target_kg_id": "LOCAL_09e880b7"
+        },
+        {
+            "source": "数据架构师",
+            "target": "企业级数据架构",
+            "relation_type": "负责",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_1ba10299"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据仓库",
+            "relation_type": "主导建设",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_68c0cda5"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据湖",
+            "relation_type": "主导建设",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_539d4415"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据治理规范",
+            "relation_type": "制定",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_49782a6e"
+        },
+        {
+            "source": "数据治理规范",
+            "target": "数据质量",
+            "relation_type": "确保达标",
+            "source_kg_id": "LOCAL_49782a6e",
+            "target_kg_id": "LOCAL_622637cc"
+        },
+        {
+            "source": "数据架构师",
+            "target": "数据处理流程",
+            "relation_type": "优化",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_d22b8450"
+        },
+        {
+            "source": "数据处理流程",
+            "target": "ETL任务",
+            "relation_type": "提升效率",
+            "source_kg_id": "LOCAL_d22b8450",
+            "target_kg_id": "LOCAL_d9d83d01"
+        },
+        {
+            "source": "数据架构师",
+            "target": "PB级数据处理",
+            "relation_type": "指导完成",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_da4e4e22"
+        },
+        {
+            "source": "PB级数据处理",
+            "target": "业务部门",
+            "relation_type": "支持需求",
+            "source_kg_id": "LOCAL_da4e4e22",
+            "target_kg_id": "LOCAL_2cd69a31"
+        },
+        {
+            "source": "数据架构师",
+            "target": "计算机相关专业",
+            "relation_type": "要求学历",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_38d6ae90"
+        },
+        {
+            "source": "数据架构师",
+            "target": "大数据架构",
+            "relation_type": "要求经验",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_f9580e81"
+        },
+        {
+            "source": "数据架构师",
+            "target": "Hadoop",
+            "relation_type": "精通",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_ae51cafd"
+        },
+        {
+            "source": "数据架构师",
+            "target": "Spark",
+            "relation_type": "精通",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_4e052335"
+        },
+        {
+            "source": "数据架构师",
+            "target": "Flink",
+            "relation_type": "精通",
+            "source_kg_id": "LOCAL_09e880b7",
+            "target_kg_id": "LOCAL_1365aa21"
+        },
+        {
+            "source": "Hadoop",
+            "target": "分布式计算框架",
+            "relation_type": "属于",
+            "source_kg_id": "LOCAL_ae51cafd",
+            "target_kg_id": "LOCAL_228f54b3"
+        },
+        {
+            "source": "Spark",
+            "target": "分布式计算框架",
+            "relation_type": "属于",
+            "source_kg_id": "LOCAL_4e052335",
+            "target_kg_id": "LOCAL_228f54b3"
+        },
+        {
+            "source": "Flink",
+            "target": "分布式计算框架",
+            "relation_type": "属于",
+            "source_kg_id": "LOCAL_1365aa21",
+            "target_kg_id": "LOCAL_228f54b3"
+        },
+        {
+            "source": "金融",
+            "target": "数据中台",
+            "relation_type": "优先经验",
+            "source_kg_id": "LOCAL_53def647",
+            "target_kg_id": "LOCAL_2bcb2968"
+        },
+        {
+            "source": "电商",
+            "target": "数据中台",
+            "relation_type": "优先经验",
+            "source_kg_id": "LOCAL_e482f503",
+            "target_kg_id": "LOCAL_2bcb2968"
+        }
+    ]
+}

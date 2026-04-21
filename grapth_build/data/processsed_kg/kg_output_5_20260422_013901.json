@@ -1,0 +1,300 @@
+{
+    "entities": [
+        {
+            "id": "data_architect",
+            "type": "岗位",
+            "description": "数据架构师",
+            "kg_id": "LOCAL_b76b153c",
+            "name": "data_architect"
+        },
+        {
+            "id": "business_requirements",
+            "type": "概念",
+            "description": "业务需求",
+            "kg_id": "LOCAL_f2ddc613",
+            "name": "business_requirements"
+        },
+        {
+            "id": "business_scenarios",
+            "type": "概念",
+            "description": "业务场景",
+            "kg_id": "LOCAL_4787090d",
+            "name": "business_scenarios"
+        },
+        {
+            "id": "data_support",
+            "type": "概念",
+            "description": "数据支撑",
+            "kg_id": "LOCAL_71c26659",
+            "name": "data_support"
+        },
+        {
+            "id": "data_model",
+            "type": "产物",
+            "description": "数据模型",
+            "kg_id": "LOCAL_a15c801e",
+            "name": "data_model"
+        },
+        {
+            "id": "data_architecture",
+            "type": "产物",
+            "description": "数据架构",
+            "kg_id": "LOCAL_db45a586",
+            "name": "data_architecture"
+        },
+        {
+            "id": "technology_selection",
+            "type": "活动",
+            "description": "技术选型",
+            "kg_id": "LOCAL_6e548cc3",
+            "name": "technology_selection"
+        },
+        {
+            "id": "processing_workflow",
+            "type": "产物",
+            "description": "加工流程",
+            "kg_id": "LOCAL_1c3e1a12",
+            "name": "processing_workflow"
+        },
+        {
+            "id": "data_platform",
+            "type": "系统",
+            "description": "数据平台",
+            "kg_id": "LOCAL_62602893",
+            "name": "data_platform"
+        },
+        {
+            "id": "technical_architecture",
+            "type": "产物",
+            "description": "技术架构",
+            "kg_id": "LOCAL_a6c02d0e",
+            "name": "technical_architecture"
+        },
+        {
+            "id": "data_collection",
+            "type": "活动",
+            "description": "数据采集",
+            "kg_id": "LOCAL_8f1dc2c3",
+            "name": "data_collection"
+        },
+        {
+            "id": "data_storage",
+            "type": "活动",
+            "description": "数据存储",
+            "kg_id": "LOCAL_a10439b1",
+            "name": "data_storage"
+        },
+        {
+            "id": "data_computation",
+            "type": "活动",
+            "description": "数据计算",
+            "kg_id": "LOCAL_3f1525e1",
+            "name": "data_computation"
+        },
+        {
+            "id": "data_analysis",
+            "type": "活动",
+            "description": "数据分析",
+            "kg_id": "LOCAL_003139a0",
+            "name": "data_analysis"
+        },
+        {
+            "id": "scalability",
+            "type": "属性",
+            "description": "可扩展性",
+            "kg_id": "LOCAL_bda12920",
+            "name": "scalability"
+        },
+        {
+            "id": "security",
+            "type": "属性",
+            "description": "安全性",
+            "kg_id": "LOCAL_b7bc6a50",
+            "name": "security"
+        },
+        {
+            "id": "high_performance",
+            "type": "属性",
+            "description": "高性能",
+            "kg_id": "LOCAL_1a705cb2",
+            "name": "high_performance"
+        },
+        {
+            "id": "data_governance",
+            "type": "活动",
+            "description": "数据治理",
+            "kg_id": "LOCAL_5d485230",
+            "name": "data_governance"
+        },
+        {
+            "id": "data_quality_management",
+            "type": "活动",
+            "description": "数据质量管理",
+            "kg_id": "LOCAL_be7b3bb0",
+            "name": "data_quality_management"
+        },
+        {
+            "id": "metadata_management",
+            "type": "活动",
+            "description": "元数据管理",
+            "kg_id": "LOCAL_ad082b96",
+            "name": "metadata_management"
+        },
+        {
+            "id": "data_lineage_tracking",
+            "type": "活动",
+            "description": "数据血缘追踪",
+            "kg_id": "LOCAL_3b3aa939",
+            "name": "data_lineage_tracking"
+        }
+    ],
+    "relations": [
+        {
+            "source": "data_architect",
+            "target": "business_requirements",
+            "relation_type": "沟通理解",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_f2ddc613"
+        },
+        {
+            "source": "data_architect",
+            "target": "business_scenarios",
+            "relation_type": "分析",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_4787090d"
+        },
+        {
+            "source": "business_scenarios",
+            "target": "data_support",
+            "relation_type": "需要",
+            "source_kg_id": "LOCAL_4787090d",
+            "target_kg_id": "LOCAL_71c26659"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_model",
+            "relation_type": "搭建",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a15c801e"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_architecture",
+            "relation_type": "搭建",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_db45a586"
+        },
+        {
+            "source": "data_architect",
+            "target": "technology_selection",
+            "relation_type": "进行",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_6e548cc3"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_model",
+            "relation_type": "设计",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a15c801e"
+        },
+        {
+            "source": "data_architect",
+            "target": "processing_workflow",
+            "relation_type": "设计",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_1c3e1a12"
+        },
+        {
+            "source": "data_architect",
+            "target": "technical_architecture",
+            "relation_type": "负责设计",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_a6c02d0e"
+        },
+        {
+            "source": "technical_architecture",
+            "target": "data_platform",
+            "relation_type": "属于",
+            "source_kg_id": "LOCAL_a6c02d0e",
+            "target_kg_id": "LOCAL_62602893"
+        },
+        {
+            "source": "technical_architecture",
+            "target": "data_collection",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_a6c02d0e",
+            "target_kg_id": "LOCAL_8f1dc2c3"
+        },
+        {
+            "source": "technical_architecture",
+            "target": "data_storage",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_a6c02d0e",
+            "target_kg_id": "LOCAL_a10439b1"
+        },
+        {
+            "source": "technical_architecture",
+            "target": "data_computation",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_a6c02d0e",
+            "target_kg_id": "LOCAL_3f1525e1"
+        },
+        {
+            "source": "technical_architecture",
+            "target": "data_analysis",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_a6c02d0e",
+            "target_kg_id": "LOCAL_003139a0"
+        },
+        {
+            "source": "data_architect",
+            "target": "scalability",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_bda12920"
+        },
+        {
+            "source": "data_architect",
+            "target": "security",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_b7bc6a50"
+        },
+        {
+            "source": "data_architect",
+            "target": "high_performance",
+            "relation_type": "确保",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_1a705cb2"
+        },
+        {
+            "source": "data_architect",
+            "target": "data_governance",
+            "relation_type": "参与",
+            "source_kg_id": "LOCAL_b76b153c",
+            "target_kg_id": "LOCAL_5d485230"
+        },
+        {
+            "source": "data_governance",
+            "target": "data_quality_management",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_5d485230",
+            "target_kg_id": "LOCAL_be7b3bb0"
+        },
+        {
+            "source": "data_governance",
+            "target": "metadata_management",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_5d485230",
+            "target_kg_id": "LOCAL_ad082b96"
+        },
+        {
+            "source": "data_governance",
+            "target": "data_lineage_tracking",
+            "relation_type": "包括",
+            "source_kg_id": "LOCAL_5d485230",
+            "target_kg_id": "LOCAL_3b3aa939"
+        }
+    ]
+}
