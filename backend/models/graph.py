@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Literal
 
 # ==========================================
 # 图谱基础元素模型
@@ -22,9 +22,32 @@ class GraphDataResponse(BaseModel):
     code: int = 200
     msg: str = "success"
     data: dict = Field(
+        default_factory=dict,
         description="包含 nodes 和 edges 的字典",
-        example={
-            "nodes": [{"id": "s1", "label": "Skill", "properties": {"name": "Python"}}],
-            "edges": [{"source": "r1", "target": "s1", "relation": "REQUIRES", "properties": {}}]
-        }
+        examples=[
+            {
+                "nodes": [{"id": "s1", "label": "Skill", "properties": {"name": "Python"}}],
+                "edges": [{"source": "r1", "target": "s1", "relation": "REQUIRES", "properties": {}}]
+            }
+        ]
     )
+
+
+class GraphFilterOption(BaseModel):
+    target: Literal["node", "edge"] = Field(default="node", description="过滤对象：节点或边")
+    field: str = Field(..., description="过滤的属性名，来自 properties 下的字段")
+    value: Any = Field(..., description="过滤值")
+    op: Literal["eq", "contains", "gt", "gte", "lt", "lte", "in"] = Field(
+        default="eq",
+        description="过滤操作符"
+    )
+
+
+class GraphFilterState(BaseModel):
+    node_filters: List[GraphFilterOption] = Field(default_factory=list, description="节点过滤规则列表")
+    edge_filters: List[GraphFilterOption] = Field(default_factory=list, description="边过滤规则列表")
+
+
+class GraphFilterSetRequest(BaseModel):
+    node_filters: List[GraphFilterOption] = Field(default_factory=list)
+    edge_filters: List[GraphFilterOption] = Field(default_factory=list)
