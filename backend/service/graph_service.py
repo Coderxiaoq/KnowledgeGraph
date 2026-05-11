@@ -1,5 +1,6 @@
 from threading import RLock
 from typing import Any, Dict, List, Optional
+from datetime import date, datetime, time
 
 
 _FILTER_LOCK = RLock()
@@ -8,6 +9,28 @@ _GLOBAL_GRAPH_FILTER: Dict[str, List[Dict[str, Any]]] = {
     "node_filters": [],
     "edge_filters": [],
 }
+
+
+def _to_jsonable(value: Any) -> Any:
+    """递归转换属性值，确保可被 FastAPI/Pydantic 序列化。"""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(k): _to_jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_to_jsonable(item) for item in value]
+
+    # 兼容 Neo4j temporal/spatial 等对象（常见有 iso_format 方法）。
+    iso_format = getattr(value, "iso_format", None)
+    if callable(iso_format):
+        try:
+            return iso_format()
+        except Exception:
+            pass
+
+    return str(value)
 
 
 def _extract_node_id(node):
@@ -130,7 +153,7 @@ def format_neo4j_data(result) -> dict:
                     nodes_dict[node_id] = {
                         "id": node_id,
                         "label": list(value.labels)[0] if value.labels else "Unknown",
-                        "properties": dict(value)
+                        "properties": _to_jsonable(dict(value))
                     }
 
             # Relationship: 有 type 和 nodes 属性
@@ -145,7 +168,7 @@ def format_neo4j_data(result) -> dict:
                         "source": source_id,
                         "target": target_id,
                         "relation": value.type,
-                        "properties": dict(value)
+                        "properties": _to_jsonable(dict(value))
                     })
 
     graph_data = {"nodes": list(nodes_dict.values()), "edges": edges_list}
