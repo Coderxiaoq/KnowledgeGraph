@@ -41,7 +41,7 @@ python load_graph.py
 ## 在 Neo4j Browser 中查看图谱
 
 ### 1. 打开 Neo4j Browser
-访问 `http://localhost:7474`，登录（用户名 `neo4j`，密码 `iris5678`）
+访问 `http://localhost:7474`，登录（用户名 `neo4j`，密码 `password`，如果改成其他密码需要到相关文件改路径）
 
 ### 2. 执行查询
 

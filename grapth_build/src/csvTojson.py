@@ -7,7 +7,7 @@ from collections import defaultdict
 # 步骤 1: 数据加载与预处理
 # ==========================================
 print("1:正在加载数据...")
-df = pd.read_csv('data.csv')
+df = pd.read_csv('../src/data.csv')
 
 # 初始化存储容器
 jobs_map = {}  # 用于去重岗位：{岗位名称: 岗位信息字典}
@@ -108,7 +108,7 @@ graph_data = {
 }
 
 # 保存为 JSON 文件
-output_file = 'knowledge_graph.json'
+output_file = '../src/knowledge_graph.json'
 with open(output_file, 'w', encoding='utf-8') as f:
     json.dump(graph_data, f, ensure_ascii=False, indent=4)
 

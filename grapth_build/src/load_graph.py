@@ -131,7 +131,7 @@ if __name__ == "__main__":
     PASSWORD = "password"
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(script_dir, "knowledge_graph_final.json")
+    json_path = os.path.join(script_dir, "../data/knowledge_graph_final.json")
 
     if not os.path.exists(json_path):
         print(f"错误: 找不到 {json_path}")
