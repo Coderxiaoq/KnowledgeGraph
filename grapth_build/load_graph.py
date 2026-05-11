@@ -64,10 +64,11 @@ class StandardGraphImporter:
             print(f"✓ 导入 {len(company_nodes)} 个 Company 节点")
 
     def import_edges(self, edges):
-        requires_edges = [e for e in edges if e.get('label') == 'REQUIRES']
-        recruits_edges = [e for e in edges if e.get('label') == 'RECRUITS']
+        requires_edges = [e for e in edges if e.get('relation') == 'REQUIRES']
+        recruits_edges = [e for e in edges if e.get('relation') == 'RECRUITS']
 
         print(f"找到 REQUIRES 边: {len(requires_edges)} 条")
+        print(f"找到 RECRUITS 边: {len(recruits_edges)} 条")
 
         # REQUIRES (Role -> Skill)
         if requires_edges:
@@ -80,6 +81,18 @@ class StandardGraphImporter:
             """
             self._run_batch(query, requires_edges)
             print(f"✓ 导入 {len(requires_edges)} 条 REQUIRES 关系")
+
+        # RECRUITS (Company -> Role)
+        if recruits_edges:
+            query = """
+            UNWIND $batch AS edge
+            MATCH (c:Company {company_id: edge.source})
+            MATCH (r:Role {role_id: edge.target})
+            MERGE (c)-[rel:RECRUITS]->(r)
+            SET rel += edge.properties
+            """
+            self._run_batch(query, recruits_edges)
+            print(f"✓ 导入 {len(recruits_edges)} 条 RECRUITS 关系")
 
 
     def _run_batch(self, cypher, data, batch_size=5000):
@@ -115,10 +128,10 @@ class StandardGraphImporter:
 if __name__ == "__main__":
     URI = "bolt://localhost:7687"
     USER = "neo4j"
-    PASSWORD = "iris5678"
+    PASSWORD = "password"
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(script_dir, "knowledge_graph_optimized.json")
+    json_path = os.path.join(script_dir, "knowledge_graph_final.json")
 
     if not os.path.exists(json_path):
         print(f"错误: 找不到 {json_path}")
