@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --color-ink-950: #131a22;
+  --color-ink-900: #1e2935;
+  --color-ink-700: #415364;
+  --color-ink-500: #6f8192;
+  --color-paper-50: #f8faf7;
+  --color-paper-100: #eef4ee;
+  --color-mint-300: #7ae7c7;
+  --color-mint-500: #17b890;
+  --color-gold-300: #ffd166;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background:
+    radial-gradient(circle at top, rgba(122, 231, 199, 0.24), transparent 32%),
+    linear-gradient(180deg, #f8faf7 0%, #edf2ea 100%);
+  color: #131a22;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
