@@ -1,63 +1,79 @@
-from service.graph_service import format_neo4j_data
-#暂时先这样写，后续会有启发性搜索
+# coding:utf-8
+# backend/service/algo_service.py
+
+# 从你刚刚创建的文件中导入核心算法逻辑类
+from service.linkage_logic import CareerLinkageLogic
+
+
 class RecommendService:
-    
-    @staticmethod
-    def recommend_role_by_skills(session, skill_ids: list, limit: int = 3):
-        """
-        逻辑：2个技能推1个岗位 (技能 -> 岗位)
-        寻找同时要求这些技能的岗位，并按权重排序
-        """
-        if len(skill_ids) < 2:
-            return {"nodes": [], "edges": []}
-
-        query = """
-        MATCH (s1:Skill) WHERE s1.skill_id = $s1_id
-        MATCH (s2:Skill) WHERE s2.skill_id = $s2_id
-        MATCH (r:Role)-[:REQUIRES]->(s1)
-        MATCH (r)-[:REQUIRES]->(s2)
-        RETURN r, s1, s2
-        LIMIT $limit
-        """
-        result = session.run(query, s1_id=skill_ids[0], s2_id=skill_ids[1], limit=limit)
-        return format_neo4j_data(result)
+    """
+    后端推荐服务接口类
+    由夏林琦集成：确保接口名与后端原有规范一致，同时引入加权联动逻辑
+    """
 
     @staticmethod
-    def recommend_company_by_roles(session, role_ids: list, limit: int = 3):
+    def recommend_role_by_skills(session, skill_ids: list, limit: int = 5):
         """
-        逻辑：2个岗位推1家公司 (岗位 -> 公司)
-        寻找同时招聘这两个岗位的公司
+        接口 1：由 [技能] 推荐 [岗位]
+        应用场景：用户在左侧勾选技能，中间岗位栏即时联动。
         """
-        if len(role_ids) < 2:
-            return {"nodes": [], "edges": []}
-
-        query = """
-        MATCH (r1:Role) WHERE r1.role_id = $r1_id
-        MATCH (r2:Role) WHERE r2.role_id = $r2_id
-        MATCH (c:Company)-[:RECRUITS]->(r1)
-        MATCH (c)-[:RECRUITS]->(r2)
-        RETURN c, r1, r2
-        LIMIT $limit
-        """
-        result = session.run(query, r1_id=role_ids[0], r2_id=role_ids[1], limit=limit)
-        return format_neo4j_data(result)
+        # 调用逻辑 A：将公司列表传为空 []，实现从技能出发的单向或多向推荐
+        return CareerLinkageLogic.recommend_roles_by_skills_and_companies(
+            session,
+            skill_ids=skill_ids,
+            company_ids=[],
+            limit=limit
+        )
 
     @staticmethod
-    def recommend_role_by_companies(session, company_ids: list, limit: int = 3):
+    def recommend_company_by_roles(session, role_ids: list, limit: int = 5):
         """
-        逻辑：2个公司推1个岗位 (公司 -> 岗位)
-        寻找这两家公司都在热招的共同岗位（行业趋势）
+        接口 2：由 [岗位] 推荐 [公司]
+        应用场景：用户在中间勾选岗位，右侧公司栏即时联动。
         """
-        if len(company_ids) < 2:
-            return {"nodes": [], "edges": []}
+        # 调用逻辑 B：将技能列表传为空 []，实现从岗位出发的推荐
+        return CareerLinkageLogic.recommend_companies_by_skills_and_roles(
+            session,
+            skill_ids=[],
+            role_ids=role_ids,
+            limit=limit
+        )
 
-        query = """
-        MATCH (c1:Company) WHERE c1.company_id = $c1_id
-        MATCH (c2:Company) WHERE c2.company_id = $c2_id
-        MATCH (c1)-[:RECRUITS]->(r:Role)
-        MATCH (c2)-[:RECRUITS]->(r)
-        RETURN r, c1, c2
-        LIMIT $limit
+    @staticmethod
+    def recommend_role_by_companies(session, company_ids: list, limit: int = 5):
         """
-        result = session.run(query, c1_id=company_ids[0], c2_id=company_ids[1], limit=limit)
-        return format_neo4j_data(result)
+        接口 3：由 [公司] 推荐 [岗位/技能]
+        应用场景：用户在右侧勾选公司，中间或左侧栏目联动。
+        """
+        # 调用逻辑 C：根据公司推导出相关的技能建议或岗位
+        return CareerLinkageLogic.recommend_skills_by_roles_and_companies(
+            session,
+            role_ids=[],
+            company_ids=company_ids,
+            limit=limit
+        )
+
+    @staticmethod
+    def recommend_2to1_linkage(session, skill_ids: list = None, role_ids: list = None, company_ids: list = None,
+                               limit: int = 5):
+        """
+        接口 4：【全联动核心接口】
+        应用场景：实现真正的“二推一”。无论用户选哪两栏，自动触发对应的算法。
+        """
+        skill_ids = skill_ids or []
+        role_ids = role_ids or []
+        company_ids = company_ids or []
+
+        # 情况 A: [技能 + 公司] -> 推荐 [岗位]
+        if skill_ids and company_ids and not role_ids:
+            return CareerLinkageLogic.recommend_roles_by_skills_and_companies(session, skill_ids, company_ids, limit)
+
+        # 情况 B: [技能 + 岗位] -> 推荐 [公司]
+        if skill_ids and role_ids and not company_ids:
+            return CareerLinkageLogic.recommend_companies_by_skills_and_roles(session, skill_ids, role_ids, limit)
+
+        # 情况 C: [岗位 + 公司] -> 推荐 [技能]
+        if role_ids and company_ids and not skill_ids:
+            return CareerLinkageLogic.recommend_skills_by_roles_and_companies(session, role_ids, company_ids, limit)
+
+        return {"nodes": [], "edges": []}
