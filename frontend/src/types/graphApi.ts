@@ -1,9 +1,13 @@
 export type GraphPrimitive = string | number | boolean | null
 
-export type GraphProperties = Record<
-  string,
-  GraphPrimitive | GraphPrimitive[] | Record<string, unknown>
->
+export type GraphJson =
+  | GraphPrimitive
+  | GraphJson[]
+  | {
+      [key: string]: GraphJson
+    }
+
+export type GraphProperties = Record<string, GraphJson>
 
 export type GraphNode = {
   id: string
@@ -23,6 +27,29 @@ export type GraphResponse = {
   edges: GraphEdge[]
 }
 
+export type FilterTarget = 'node' | 'edge'
+
+export type FilterOperator =
+  | 'eq'
+  | 'contains'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'in'
+
+export interface GraphFilter {
+  target: FilterTarget
+  field: string
+  value: unknown
+  op: FilterOperator
+}
+
+export type GraphFilterState = {
+  node_filters: GraphFilter[]
+  edge_filters: GraphFilter[]
+}
+
 export type FilterCondition = {
   area?: 'skill' | 'job' | 'company'
   field: string
@@ -37,25 +64,26 @@ export type FilterState = {
   conditions?: FilterCondition[]
 }
 
+export type RecommendType = 'skill_to_role' | 'role_to_company' | 'company_to_role'
+
+export type RecommendQuery = {
+  type: RecommendType
+  id1: string
+  id2: string
+  limit?: number
+  signal?: AbortSignal
+}
+
 export type SearchNodesParams = {
   keyword: string
   nodeType?: string
   label?: string
-}
-
-export type DualAreaSelection = {
-  skillNodeIds?: string[]
-  jobNodeIds?: string[]
-  companyNodeIds?: string[]
-}
-
-export type Recommend2To1Params = {
-  sourceAreas: Array<'skill' | 'job' | 'company'>
-  targetArea: 'skill' | 'job' | 'company'
-  selected: DualAreaSelection
-  filters?: FilterState
   limit?: number
+  debounceMs?: number
+  signal?: AbortSignal
 }
+
+export type SearchNodesResponse = GraphResponse
 
 export type RecommendNodeScore = {
   node: GraphNode
@@ -90,6 +118,23 @@ export type RecommendResponse = {
   graph?: GraphResponse
 }
 
+export type LegacyDualAreaSelection = {
+  skillNodeIds?: string[]
+  jobNodeIds?: string[]
+  companyNodeIds?: string[]
+}
+
+export type LegacyRecommend2To1Params = {
+  sourceAreas: Array<'skill' | 'job' | 'company'>
+  targetArea: 'skill' | 'job' | 'company'
+  selected: LegacyDualAreaSelection
+  filters?: FilterState
+  limit?: number
+  signal?: AbortSignal
+}
+
+export type Recommend2To1Params = RecommendQuery | LegacyRecommend2To1Params
+
 export type CytoscapeNode = {
   data: {
     id: string
@@ -110,3 +155,9 @@ export type CytoscapeEdge = {
 }
 
 export type CytoscapeElements = Array<CytoscapeNode | CytoscapeEdge>
+
+export type ApiEnvelope<T> = {
+  code: number
+  msg: string
+  data: T
+}

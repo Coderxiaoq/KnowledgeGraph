@@ -2,7 +2,11 @@ export type GraphNode = {
   data: {
     id: string
     label: string
+    displayLabel?: string
     category: string
+    textMaxWidth?: number
+    width?: number
+    height?: number
   }
 }
 
@@ -21,6 +25,12 @@ export type GraphData = {
 }
 
 export type GraphPanelId = 'skill' | 'job' | 'company'
+
+export type GraphLayoutMode =
+  | 'fcose'
+  | 'cose-bilkent'
+  | 'concentric'
+  | 'breadthfirst'
 
 export type KnowledgeGraphNodeEvent = {
   id: string

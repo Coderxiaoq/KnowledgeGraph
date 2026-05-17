@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
+import { PathBar } from '../components/PathBar'
 import { SearchBar } from '../components/SearchBar'
 import { GraphPanel } from '../components/graph/GraphPanel'
 import { AppShell } from '../components/layout/AppShell'
@@ -62,6 +63,13 @@ export function Home() {
         return
       }
 
+      if (
+        target instanceof Element &&
+        target.closest('[data-allow-focus-interaction="true"]')
+      ) {
+        return
+      }
+
       setFocusedPanel(null)
     }
 
@@ -83,7 +91,7 @@ export function Home() {
 
   return (
     <AppShell>
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col pb-24 md:pb-28 lg:pb-32">
         <section className="relative overflow-hidden px-6 pb-8 pt-8 md:px-8 md:pb-10 md:pt-10 lg:px-12 lg:pb-12 lg:pt-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,209,102,0.28),_transparent_38%)]" />
           <motion.div
@@ -146,6 +154,7 @@ export function Home() {
           </motion.div>
         </section>
       </main>
+      <PathBar />
     </AppShell>
   )
 }

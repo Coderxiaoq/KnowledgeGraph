@@ -75,7 +75,7 @@ export function GraphPanel({
 
       <div className="relative z-10 mt-1 flex-1 px-4 pb-4">
         <div className="h-full rounded-[24px] border border-ink-900/8 bg-paper-50/70 p-3">
-          <GraphPreview panelId={panelId} graph={graph} />
+          <GraphPreview panelId={panelId} graph={graph} isPanelFocused={isFocused} />
         </div>
       </div>
     </motion.div>

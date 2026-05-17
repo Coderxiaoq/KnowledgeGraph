@@ -1,27 +1,51 @@
-import { useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph'
-import { getGraphByPanel } from '../services/homeService'
-import { expandNode, expandNode2Hop, recommend2To1 } from '../services/graphApi'
+import {
+  getGraphByPanel,
+  getPanelGraphLoader,
+  setGraphByPanel,
+} from '../services/homeService'
+import { expandNode, expandNode2Hop } from '../services/graphApi'
 import { useGraphStore, toSelectedGraphNode } from '../store/graphStore'
+import { usePathStore } from '../store/pathStore'
 import { useAppStore } from '../store/useAppStore'
-import type { GraphData, GraphPanelId, GraphPath, SelectedGraphNode } from '../types/graph'
 import type {
-  CytoscapeEdge,
-  GraphNode as RawGraphNode,
-  GraphResponse,
-  InferencePath,
-  RecommendNodeScore,
-} from '../types/graphApi'
-import { transformEdges } from '../utils/graphTransform'
+  GraphData,
+  GraphPath,
+  GraphPanelId,
+  SelectedGraphNode,
+} from '../types/graph'
+import type { CytoscapeEdge, GraphNode as RawGraphNode, GraphResponse } from '../types/graphApi'
+import {
+  normalizeGraphToken,
+  resolvePanelByLabel,
+  toCytoscapeEdge,
+} from './data'
 
 type GraphPreviewProps = {
   panelId: GraphPanelId
   graph: GraphData
+  isPanelFocused: boolean
 }
 
-export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
-  const activeNodeId = useAppStore((state) => state.activeNodeIds[panelId])
+const LAZY_RENDER_THRESHOLD = 500
+const LAZY_RENDER_BATCH_SIZE = 160
+const HOVER_BRIDGE_CLEAR_DELAY = 120
+
+const DEFAULT_LAYOUT_MODE = 'fcose'
+const DEFAULT_WHEEL_SENSITIVITY = 0.009
+
+function shouldUseTwoHopExpand(panelId: GraphPanelId) {
+  return panelId === 'skill' || panelId === 'company'
+}
+
+export const GraphPreview = memo(function GraphPreview({
+  panelId,
+  isPanelFocused,
+}: GraphPreviewProps) {
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
+  const navigationRequest = usePathStore((state) => state.navigationRequest)
+  const clearNavigationRequest = usePathStore((state) => state.clearNavigationRequest)
   const selectedNode = useGraphStore((state) => state.selectedNode)
   const selectedNodes = useGraphStore((state) => state.selectedNodes)
   const highlightedNodes = useGraphStore((state) => state.highlightedNodes)
@@ -31,25 +55,39 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
   const likedNodes = useGraphStore((state) => state.likedNodes)
   const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
   const focusedNode = useGraphStore((state) => state.focusedNode)
+  const currentFocusColumn = useGraphStore((state) => state.currentFocusColumn)
   const toggleSelectedNode = useGraphStore((state) => state.toggleSelectedNode)
+  const clearPanelSelection = useGraphStore((state) => state.clearPanelSelection)
   const setHoveredNode = useGraphStore((state) => state.setHoveredNode)
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
   const setHiddenNodes = useGraphStore((state) => state.setHiddenNodes)
   const setActiveBridgeEdges = useGraphStore((state) => state.setActiveBridgeEdges)
   const clearActiveBridgeEdges = useGraphStore((state) => state.clearActiveBridgeEdges)
   const setCurrentExpandGraph = useGraphStore((state) => state.setCurrentExpandGraph)
-  const setRecommendedNodes = useGraphStore((state) => state.setRecommendedNodes)
   const updateCurrentPath = useGraphStore((state) => state.updateCurrentPath)
+  const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
+  const applyColumnContext = useGraphStore((state) => state.applyColumnContext)
   const likeNode = useGraphStore((state) => state.likeNode)
   const dislikeNode = useGraphStore((state) => state.dislikeNode)
   const unlikeNode = useGraphStore((state) => state.unlikeNode)
   const undislikeNode = useGraphStore((state) => state.undislikeNode)
+  const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const clearPreferences = useGraphStore((state) => state.clearPreferences)
+  const [graphData, setGraphData] = useState<GraphData>(() => getGraphByPanel(panelId))
+  const [loading, setLoading] = useState(graphData.nodes.length === 0)
+  const [error, setError] = useState<string | null>(null)
   const [hoveredNodeLabel, setHoveredNodeLabel] = useState('')
+  const [loadVersion, setLoadVersion] = useState(0)
+  const frameRef = useRef<number | null>(null)
+  const controllerRef = useRef<AbortController | null>(null)
+  const hoverClearTimerRef = useRef<number | null>(null)
+  const initialGraphRef = useRef<GraphData | null>(null)
 
   const selectedNodeIds = selectedNodes[panelId].map((node) => node.id)
-  const activeSelectedNode =
-    selectedNode?.graphArea === panelId ? selectedNode : null
+  const activeSelectedNode = selectedNode?.graphArea === panelId ? selectedNode : null
+  const activeVisualNodeId =
+    selectedNode?.graphArea === panelId ? selectedNode.id : undefined
+  const panelSelectedNodes = selectedNodes[panelId]
   const isLiked = activeSelectedNode
     ? likedNodes.some((node) => node.id === activeSelectedNode.id)
     : false
@@ -58,11 +96,67 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
     : false
   const hasPreferences = likedNodes.length > 0 || dislikedNodes.length > 0
 
+  useEffect(() => {
+    void syncPreferenceState({
+      hideDisliked: true,
+    })
+  }, [
+    activeSelectedNode,
+    currentFocusColumn,
+    panelId,
+    syncPreferenceState,
+    likedNodes,
+    dislikedNodes,
+  ])
+
+  const loadGraph = useCallback(async () => {
+    controllerRef.current?.abort()
+    controllerRef.current = new AbortController()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const nextGraph = await getPanelGraphLoader(panelId)(controllerRef.current.signal)
+      if (controllerRef.current.signal.aborted) {
+        return
+      }
+
+      initialGraphRef.current = nextGraph
+
+      await applyGraphDataIncrementally(nextGraph, setGraphData, frameRef)
+      setGraphByPanel(panelId, nextGraph)
+    } catch (loadError) {
+      if (controllerRef.current?.signal.aborted) {
+        return
+      }
+
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load graph')
+    } finally {
+      if (!controllerRef.current?.signal.aborted) {
+        setLoading(false)
+      }
+    }
+  }, [panelId])
+
+  useEffect(() => {
+    void loadGraph()
+
+    return () => {
+      controllerRef.current?.abort()
+      if (frameRef.current) {
+        window.cancelAnimationFrame(frameRef.current)
+      }
+      if (hoverClearTimerRef.current) {
+        window.clearTimeout(hoverClearTimerRef.current)
+      }
+    }
+  }, [loadGraph, loadVersion])
+
   const visibleEdgeIds = useMemo(() => {
     const selected = new Set(selectedNodeIds)
     const highlighted = new Set(highlightedNodes[panelId])
 
-    return graph.edges
+    return graphData.edges
       .filter((edge) => {
         const source = edge.data.source
         const target = edge.data.target
@@ -77,82 +171,217 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
         return sourceActive && targetActive
       })
       .map((edge) => edge.data.id)
-  }, [graph.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
+  }, [graphData.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
 
-  async function handleBridge(node: SelectedGraphNode, use2Hop: boolean) {
-    const expandGraph = use2Hop ? await expandNode2Hop(node.id) : await expandNode(node.id)
+  const syncPanelsFromExpand = useCallback(
+    (expandedGraph: GraphResponse) => {
+      const highlighted = buildHighlightedMap(expandedGraph)
+      const nextHidden = buildHiddenMap(expandedGraph, selectedNodes, dislikedNodes)
 
-    setCurrentExpandGraph(expandGraph)
-    setActiveBridgeEdges(panelId, buildBridgeEdges(panelId, expandGraph))
+      setHighlightedNodes(highlighted)
+      setHiddenNodes(nextHidden)
+      setCurrentExpandGraph(expandedGraph)
+      updateCurrentPath(buildGraphPath(expandedGraph))
+    },
+    [
+      dislikedNodes,
+      selectedNodes,
+      setCurrentExpandGraph,
+      setHiddenNodes,
+      setHighlightedNodes,
+      updateCurrentPath,
+    ],
+  )
 
-    return expandGraph
-  }
+  const handleBridge = useCallback(
+    async (node: SelectedGraphNode, use2Hop: boolean) => {
+      const expandedGraph = use2Hop
+        ? await expandNode2Hop(node.id, { limit: 160 })
+        : await expandNode(node.id)
 
-  async function handleLinkageClick(node: SelectedGraphNode) {
-    setActiveNodeId(panelId, node.id)
-    toggleSelectedNode(panelId, node)
+      setActiveBridgeEdges(panelId, buildBridgeEdges(expandedGraph))
+      syncPanelsFromExpand(expandedGraph)
 
-    const nextSelected = upsertSelection(selectedNodes[panelId], node)
-    const nextSelectedNodes = {
-      ...selectedNodes,
-      [panelId]: nextSelected,
-    }
+      return expandedGraph
+    },
+    [panelId, setActiveBridgeEdges, syncPanelsFromExpand],
+  )
 
-    const use2Hop = activeNodeId === node.id
-    const expandGraph = await handleBridge(node, use2Hop)
-
-    const expandHighlighted = buildHighlightedMap(expandGraph)
-    const expandHidden = buildHiddenMap(expandGraph, nextSelectedNodes)
-
-    setHighlightedNodes(expandHighlighted)
-    setHiddenNodes(expandHidden)
-
-    const targetArea = resolveRecommendTarget(nextSelectedNodes)
-
-    if (!targetArea) {
+  useEffect(() => {
+    if (!navigationRequest || navigationRequest.panelId !== panelId) {
       return
     }
 
-    const recommendResult = await recommend2To1({
-      sourceAreas: (['skill', 'job', 'company'] as const).filter(
-        (area) => area !== targetArea && nextSelectedNodes[area].length > 0,
-      ),
-      targetArea,
-      selected: {
-        skillNodeIds: nextSelectedNodes.skill.map((item) => item.id),
-        jobNodeIds: nextSelectedNodes.job.map((item) => item.id),
-        companyNodeIds: nextSelectedNodes.company.map((item) => item.id),
-      },
-      limit: 10,
-    })
-
-    const recommended = recommendResult.recommendedNodes.map((item) =>
-      toSelectedGraphNode(targetArea, {
-        id: item.node.id,
-        label: String(item.node.properties.name ?? item.node.id),
-        category: item.node.label,
-      }),
+    const targetNode = graphData.nodes.find(
+      (node) => node.data.id === navigationRequest.nodeId,
     )
 
-    setRecommendedNodes(recommended)
-    updateCurrentPath(toGraphPath(recommendResult.currentPath))
+    if (!targetNode) {
+      clearNavigationRequest()
+      return
+    }
+
+    const nextNode: SelectedGraphNode = {
+      id: targetNode.data.id,
+      label: targetNode.data.label,
+      category: targetNode.data.category,
+      graphArea: panelId,
+    }
+
+    setCurrentFocusColumn(panelId)
+    applyColumnContext(panelId, [...selectedNodes[panelId], nextNode])
+    setActiveNodeId(panelId, nextNode.id)
+    useGraphStore.setState({
+      selectedNode: nextNode,
+      focusedNode: nextNode,
+    })
+
+    clearNavigationRequest()
+    void handleBridge(nextNode, shouldUseTwoHopExpand(panelId))
+  }, [
+    clearNavigationRequest,
+    graphData.nodes,
+    handleBridge,
+    navigationRequest,
+    panelId,
+    applyColumnContext,
+    selectedNodes,
+    setActiveNodeId,
+    setCurrentFocusColumn,
+  ])
+
+  const resetPanelToInitialState = useCallback(() => {
+    const initialGraph = initialGraphRef.current ?? getGraphByPanel(panelId)
+
+    setGraphData(initialGraph)
+    setGraphByPanel(panelId, initialGraph)
+    setActiveNodeId(panelId, '')
+    clearPanelSelection(panelId)
+    clearActiveBridgeEdges(panelId)
+    setHoveredNode(null)
+    setHoveredNodeLabel('')
+    setCurrentExpandGraph(null)
+
+    if (focusedNode?.graphArea === panelId) {
+      useGraphStore.setState({ focusedNode: null })
+    }
 
     setHighlightedNodes({
-      ...expandHighlighted,
-      [targetArea]: buildRecommendedIds(targetArea, recommendResult.recommendedNodes),
+      skill: [],
+      job: [],
+      company: [],
     })
 
     setHiddenNodes({
-      ...expandHidden,
-      [targetArea]: buildRecommendedHiddenIds(targetArea, recommendResult.recommendedNodes),
+      skill: [],
+      job: [],
+      company: [],
     })
+  }, [
+    clearActiveBridgeEdges,
+    clearPanelSelection,
+    focusedNode?.graphArea,
+    panelId,
+    setActiveNodeId,
+    setCurrentExpandGraph,
+    setHiddenNodes,
+    setHighlightedNodes,
+    setHoveredNode,
+  ])
+
+  const handleNodeClick = useCallback(
+    async (node: SelectedGraphNode) => {
+      if (!isPanelFocused) {
+        return
+      }
+
+      const isAlreadySelected = selectedNodes[panelId].some((item) => item.id === node.id)
+      const isSameFocusedNode =
+        selectedNode?.graphArea === panelId &&
+        selectedNode.id === node.id &&
+        isAlreadySelected
+
+      if (isSameFocusedNode && selectedNodes[panelId].length <= 1) {
+        resetPanelToInitialState()
+        return
+      }
+
+      if (isAlreadySelected) {
+        setActiveNodeId(panelId, node.id)
+        useGraphStore.setState({ selectedNode: node, focusedNode: node })
+        return
+      }
+
+      setCurrentFocusColumn(panelId)
+      applyColumnContext(panelId, [...selectedNodes[panelId], node])
+      setActiveNodeId(panelId, node.id)
+      toggleSelectedNode(panelId, node)
+      useGraphStore.setState({ focusedNode: node })
+
+      await handleBridge(node, shouldUseTwoHopExpand(panelId))
+    },
+    [
+      applyColumnContext,
+      handleBridge,
+      panelId,
+      resetPanelToInitialState,
+      selectedNode,
+      selectedNodes,
+      isPanelFocused,
+      setActiveNodeId,
+      setCurrentFocusColumn,
+      toggleSelectedNode,
+    ],
+  )
+
+  const handleNodeHover = useCallback(
+    (node: { id: string; label: string; category: string } | null) => {
+      if (hoverClearTimerRef.current) {
+        window.clearTimeout(hoverClearTimerRef.current)
+        hoverClearTimerRef.current = null
+      }
+
+      setHoveredNodeLabel(node?.label ?? '')
+      setHoveredNode(node ? toSelectedGraphNode(panelId, node) : null)
+
+      if (!node) {
+        hoverClearTimerRef.current = window.setTimeout(() => {
+          clearActiveBridgeEdges(panelId)
+        }, HOVER_BRIDGE_CLEAR_DELAY)
+        return
+      }
+    },
+    [clearActiveBridgeEdges, panelId, setHoveredNode],
+  )
+
+  if (loading && graphData.nodes.length === 0) {
+    return (
+      <div className="flex h-[320px] items-center justify-center rounded-3xl border border-ink-900/8 bg-white/70 text-sm text-ink-600">
+        Loading graph...
+      </div>
+    )
+  }
+
+  if (error && graphData.nodes.length === 0) {
+    return (
+      <div className="flex h-[320px] flex-col items-center justify-center gap-3 rounded-3xl border border-rose-200 bg-rose-50/70 px-4 text-center">
+        <p className="text-sm font-medium text-rose-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => setLoadVersion((version) => version + 1)}
+          className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-700"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-3">
       <KnowledgeGraph
-        data={graph}
-        activeNodeId={activeNodeId}
+        data={graphData}
+        activeNodeId={activeVisualNodeId}
         highlightedNodeIds={highlightedNodes[panelId]}
         hiddenNodeIds={hiddenNodes[panelId]}
         visibleEdgeIds={visibleEdgeIds}
@@ -161,22 +390,11 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
         likedNodeIds={likedNodes.map((node) => node.id)}
         dislikedNodeIds={dislikedNodes.map((node) => node.id)}
         focusedNodeId={focusedNode?.graphArea === panelId ? focusedNode.id : null}
-        layoutName="breadthfirst"
+        layoutName={DEFAULT_LAYOUT_MODE}
+        wheelSensitivity={DEFAULT_WHEEL_SENSITIVITY}
         className="h-[320px] w-full rounded-3xl bg-paper-50/70"
-        onNodeClick={async (node) => {
-          await handleLinkageClick(toSelectedGraphNode(panelId, node))
-        }}
-        onNodeHover={(node) => {
-          setHoveredNodeLabel(node?.label ?? '')
-          setHoveredNode(node ? toSelectedGraphNode(panelId, node) : null)
-
-          if (!node) {
-            clearActiveBridgeEdges(panelId)
-            return
-          }
-
-          void handleBridge(toSelectedGraphNode(panelId, node), false)
-        }}
+        onNodeClick={(node) => void handleNodeClick(toSelectedGraphNode(panelId, node))}
+        onNodeHover={handleNodeHover}
       />
       {activeSelectedNode ? (
         <div className="rounded-2xl border border-ink-900/8 bg-white/78 px-4 py-3">
@@ -188,17 +406,20 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
               <p className="mt-1 text-sm font-semibold text-ink-950">
                 {activeSelectedNode.label}
               </p>
+              <p className="mt-1 text-xs text-ink-500">
+                当前栏位已选 {panelSelectedNodes.length} 个节点
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => {
                   if (isLiked) {
-                    unlikeNode(activeSelectedNode.id)
+                    void unlikeNode(activeSelectedNode.id)
                     return
                   }
 
-                  likeNode(activeSelectedNode)
+                  void likeNode(activeSelectedNode)
                 }}
                 className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
                   isLiked
@@ -212,11 +433,11 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
                 type="button"
                 onClick={() => {
                   if (isDisliked) {
-                    undislikeNode(activeSelectedNode.id)
+                    void undislikeNode(activeSelectedNode.id)
                     return
                   }
 
-                  dislikeNode(activeSelectedNode)
+                    void dislikeNode(activeSelectedNode)
                 }}
                 className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
                   isDisliked
@@ -229,7 +450,7 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
               {hasPreferences ? (
                 <button
                   type="button"
-                  onClick={clearPreferences}
+                  onClick={() => void clearPreferences()}
                   className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   Clear Preferences
@@ -237,81 +458,82 @@ export function GraphPreview({ panelId, graph }: GraphPreviewProps) {
               ) : null}
             </div>
           </div>
+          {panelSelectedNodes.length > 1 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {panelSelectedNodes.map((node) => {
+                const nodeLiked = likedNodes.some((item) => item.id === node.id)
+                const nodeDisliked = dislikedNodes.some((item) => item.id === node.id)
+
+                return (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => useGraphStore.setState({ selectedNode: node })}
+                    className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+                      activeSelectedNode?.id === node.id
+                        ? 'bg-ink-950 text-white'
+                        : 'bg-ink-50 text-ink-700 hover:bg-ink-100'
+                    }`}
+                  >
+                    <span>{node.label}</span>
+                    {nodeLiked ? <span className="ml-2 text-emerald-500">Like</span> : null}
+                    {nodeDisliked ? <span className="ml-2 text-rose-500">Dislike</span> : null}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="rounded-2xl border border-ink-900/8 bg-white/70 px-4 py-3 text-sm text-ink-700">
-        {hoveredNodeLabel || 'Hover a node to inspect the current context.'}
+        {loading
+          ? 'Syncing graph data...'
+          : hoveredNodeLabel || 'Hover a node to inspect the current context.'}
       </div>
     </div>
   )
-}
+})
 
-function normalize(value: string | undefined) {
-  return value?.trim().toLowerCase() ?? ''
-}
-
-function resolvePanelByLabel(label: string): GraphPanelId | null {
-  const normalized = normalize(label)
-
-  if (normalized.includes('skill')) {
-    return 'skill'
+async function applyGraphDataIncrementally(
+  nextGraph: GraphData,
+  setGraphData: (graph: GraphData) => void,
+  frameRef: React.MutableRefObject<number | null>,
+) {
+  if (nextGraph.nodes.length <= LAZY_RENDER_THRESHOLD) {
+    setGraphData(nextGraph)
+    return
   }
 
-  if (normalized.includes('company')) {
-    return 'company'
-  }
+  let cursor = 0
+  const accumulatedNodes = [] as GraphData['nodes']
+  const edges = nextGraph.edges
 
-  if (normalized.includes('job') || normalized.includes('role')) {
-    return 'job'
-  }
+  await new Promise<void>((resolve) => {
+    const pump = () => {
+      accumulatedNodes.push(
+        ...nextGraph.nodes.slice(cursor, cursor + LAZY_RENDER_BATCH_SIZE),
+      )
+      cursor += LAZY_RENDER_BATCH_SIZE
 
-  return null
-}
+      setGraphData({
+        nodes: [...accumulatedNodes],
+        edges,
+      })
 
-function matchPanelNodeIds(panelId: GraphPanelId, rawNodes: RawGraphNode[]) {
-  const panelGraph = getGraphByPanel(panelId)
-  const rawTokens = new Set(
-    rawNodes.flatMap((node) => [normalize(node.id), normalize(String(node.properties.name ?? ''))]),
-  )
+      if (cursor >= nextGraph.nodes.length) {
+        resolve()
+        return
+      }
 
-  return panelGraph.nodes
-    .filter(
-      (node) =>
-        rawTokens.has(normalize(node.data.id)) || rawTokens.has(normalize(node.data.label)),
-    )
-    .map((node) => node.data.id)
-}
-
-function buildRawToLocalNodeLookup(panelId: GraphPanelId, rawNodes: RawGraphNode[]) {
-  const panelGraph = getGraphByPanel(panelId)
-  const lookup = new Map<string, string>()
-
-  rawNodes.forEach((node) => {
-    const rawId = normalize(node.id)
-    const rawName = normalize(String(node.properties.name ?? ''))
-    const matched = panelGraph.nodes.find(
-      (item) =>
-        normalize(item.data.id) === rawId ||
-        normalize(item.data.label) === rawId ||
-        normalize(item.data.label) === rawName,
-    )
-
-    if (!matched) {
-      return
+      frameRef.current = window.requestAnimationFrame(pump)
     }
 
-    lookup.set(rawId, matched.data.id)
-
-    if (rawName) {
-      lookup.set(rawName, matched.data.id)
-    }
+    frameRef.current = window.requestAnimationFrame(pump)
   })
-
-  return lookup
 }
 
 function buildHighlightedMap(response: GraphResponse) {
-  const grouped: Record<GraphPanelId, RawGraphNode[]> = {
+  const highlighted: Record<GraphPanelId, string[]> = {
     skill: [],
     job: [],
     company: [],
@@ -319,24 +541,23 @@ function buildHighlightedMap(response: GraphResponse) {
 
   response.nodes.forEach((node) => {
     const area = resolvePanelByLabel(node.label)
-
-    if (area) {
-      grouped[area].push(node)
+    if (!area) {
+      return
     }
+
+    highlighted[area].push(node.id)
   })
 
-  return {
-    skill: matchPanelNodeIds('skill', grouped.skill),
-    job: matchPanelNodeIds('job', grouped.job),
-    company: matchPanelNodeIds('company', grouped.company),
-  }
+  return highlighted
 }
 
 function buildHiddenMap(
   response: GraphResponse,
   selected: Record<GraphPanelId, SelectedGraphNode[]>,
+  dislikedNodes: SelectedGraphNode[],
 ) {
   const highlighted = buildHighlightedMap(response)
+  const dislikedIds = new Set(dislikedNodes.map((node) => node.id))
 
   return (['skill', 'job', 'company'] as const).reduce(
     (acc, area) => {
@@ -348,7 +569,7 @@ function buildHiddenMap(
 
       acc[area] = panelGraph.nodes
         .map((node) => node.data.id)
-        .filter((nodeId) => !keepIds.has(nodeId))
+        .filter((nodeId) => !keepIds.has(nodeId) && dislikedIds.has(nodeId))
 
       return acc
     },
@@ -360,88 +581,48 @@ function buildHiddenMap(
   )
 }
 
-function buildBridgeEdges(panelId: GraphPanelId, response: GraphResponse): CytoscapeEdge[] {
-  const localNodeIds = new Set(getGraphByPanel(panelId).nodes.map((node) => node.data.id))
-  const rawLookup = buildRawToLocalNodeLookup(panelId, response.nodes)
-
-  return transformEdges(
-    response.edges.filter((edge) => {
-      const source = rawLookup.get(normalize(edge.source))
-      const target = rawLookup.get(normalize(edge.target))
-
-      return Boolean(source && target && localNodeIds.has(source) && localNodeIds.has(target))
-    }),
-  ).map((edge) => ({
-    data: {
-      ...edge.data,
-      id: `bridge:${panelId}:${edge.data.id}`,
-      source: rawLookup.get(normalize(edge.data.source)) ?? edge.data.source,
-      target: rawLookup.get(normalize(edge.data.target)) ?? edge.data.target,
-    },
-  }))
-}
-
-function resolveRecommendTarget(selected: Record<GraphPanelId, SelectedGraphNode[]>) {
-  const activeAreas = (['skill', 'job', 'company'] as const).filter(
-    (area) => selected[area].length > 0,
-  )
-
-  if (activeAreas.length !== 2) {
-    return null
-  }
-
-  if (!activeAreas.includes('skill')) {
-    return 'skill'
-  }
-
-  if (!activeAreas.includes('job')) {
-    return 'job'
-  }
-
-  return 'company'
-}
-
-function upsertSelection(nodes: SelectedGraphNode[], node: SelectedGraphNode) {
-  if (nodes.some((item) => item.id === node.id)) {
-    return nodes
-  }
-
-  return [...nodes, node]
-}
-
-function buildRecommendedIds(targetArea: GraphPanelId, nodes: RecommendNodeScore[]) {
-  return matchPanelNodeIds(
-    targetArea,
-    nodes.map((item) => item.node),
-  )
-}
-
-function buildRecommendedHiddenIds(targetArea: GraphPanelId, nodes: RecommendNodeScore[]) {
-  const highlightIds = new Set(buildRecommendedIds(targetArea, nodes))
-  const panelGraph = getGraphByPanel(targetArea)
-
-  return panelGraph.nodes
-    .map((node) => node.data.id)
-    .filter((nodeId) => !highlightIds.has(nodeId))
-}
-
-function toGraphPath(path: InferencePath | null): GraphPath | null {
-  if (!path) {
-    return null
-  }
-
+function buildGraphPath(response: GraphResponse): GraphPath {
   return {
-    nodes: path.nodes.map((node) => ({
+    nodes: response.nodes.map((node) => ({
       id: node.id,
-      label: node.label,
-      category: '',
+      label: String(node.properties.name ?? node.id),
+      category: node.label,
     })),
-    edges: path.edges.map((edge) => ({
+    edges: response.edges.map((edge) => ({
       id: `${edge.source}-${edge.relation}-${edge.target}`,
       source: edge.source,
       target: edge.target,
       label: edge.relation,
     })),
-    summary: path.summary,
   }
 }
+
+function buildBridgeEdges(response: GraphResponse): CytoscapeEdge[] {
+  return response.edges.map((edge) => ({
+    data: {
+      ...toCytoscapeEdge(edge).data,
+      id: `bridge:${edge.source}-${edge.relation}-${edge.target}`,
+      properties: edge.properties,
+    },
+  }))
+}
+
+function _matchPanelNodeIds(panelId: GraphPanelId, rawNodes: RawGraphNode[]) {
+  const panelGraph = getGraphByPanel(panelId)
+  const rawTokens = new Set(
+    rawNodes.flatMap((node) => [
+      normalizeGraphToken(node.id),
+      normalizeGraphToken(String(node.properties.name ?? '')),
+    ]),
+  )
+
+  return panelGraph.nodes
+    .filter(
+      (node) =>
+        rawTokens.has(normalizeGraphToken(node.data.id)) ||
+        rawTokens.has(normalizeGraphToken(String(node.data.label))),
+    )
+    .map((node) => node.data.id)
+}
+
+void _matchPanelNodeIds
