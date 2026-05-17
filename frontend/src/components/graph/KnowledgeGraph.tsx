@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react'
-import cytoscape from 'cytoscape'
-import type { Core, ElementDefinition, StylesheetJson } from 'cytoscape'
+import { useEffect, useMemo, useRef } from 'react'
+import type { Core, ElementDefinition, LayoutOptions } from 'cytoscape'
+import { cytoscape } from '../../graph/cytoscape'
+import { buildGraphLayoutOptions, getGraphLayoutMode } from '../../graph/layout'
+import { knowledgeGraphStyles } from '../../graph/styles'
 import { useGraphStore } from '../../store/graphStore'
-import type { GraphData, KnowledgeGraphNodeEvent } from '../../types/graph'
+import type { GraphData, GraphLayoutMode, KnowledgeGraphNodeEvent } from '../../types/graph'
 import type { CytoscapeEdge } from '../../types/graphApi'
 
 export type KnowledgeGraphProps = {
@@ -17,158 +19,23 @@ export type KnowledgeGraphProps = {
   likedNodeIds?: string[]
   dislikedNodeIds?: string[]
   focusedNodeId?: string | null
-  layoutName?: 'breadthfirst' | 'grid' | 'circle' | 'concentric' | 'cose'
+  layoutName?: GraphLayoutMode
+  wheelSensitivity?: number
   onNodeClick?: (node: KnowledgeGraphNodeEvent) => void
   onNodeHover?: (node: KnowledgeGraphNodeEvent | null) => void
 }
 
-const knowledgeGraphStyles: StylesheetJson = [
-  {
-    selector: 'node',
-    style: {
-      width: 56,
-      height: 56,
-      label: 'data(label)',
-      color: '#10202a',
-      'font-size': 11,
-      'font-weight': 700,
-      'text-wrap': 'wrap',
-      'text-max-width': '78px',
-      'text-valign': 'bottom',
-      'text-margin-y': 10,
-      'background-color': '#7ae7c7',
-      'border-width': 2,
-      'border-color': '#17b890',
-      'overlay-opacity': 0,
-      'transition-property': 'background-color border-color width height',
-      'transition-duration': 200,
-    },
-  },
-  {
-    selector: 'edge',
-    style: {
-      width: 2,
-      label: 'data(label)',
-      color: '#556779',
-      'font-size': 9,
-      'line-color': '#8ea4b8',
-      'target-arrow-color': '#8ea4b8',
-      'target-arrow-shape': 'triangle',
-      'curve-style': 'bezier',
-      opacity: 0,
-    },
-  },
-  {
-    selector: 'edge.bridge-edge',
-    style: {
-      opacity: 0.96,
-      width: 4,
-      label: 'data(label)',
-      color: '#fff7ed',
-      'font-size': 10,
-      'font-weight': 700,
-      'line-color': '#f97316',
-      'target-arrow-color': '#f97316',
-      'target-arrow-shape': 'triangle',
-      'curve-style': 'bezier',
-      'underlay-color': '#fdba74',
-      'underlay-opacity': 0.36,
-      'underlay-padding': 4,
-      'text-background-color': '#7c2d12',
-      'text-background-opacity': 0.72,
-      'text-background-shape': 'roundrectangle',
-      'text-rotation': 'autorotate',
-      'arrow-scale': 1.15,
-    },
-  },
-  {
-    selector: 'edge.bridge-edge.is-bridge-hovered',
-    style: {
-      width: 5,
-      'line-color': '#fb7185',
-      'target-arrow-color': '#fb7185',
-      'underlay-opacity': 0.5,
-    },
-  },
-  {
-    selector: '.is-active',
-    style: {
-      'background-color': '#ffd166',
-      'border-color': '#131a22',
-      'border-width': 3,
-      width: 64,
-      height: 64,
-    },
-  },
-  {
-    selector: '.is-hovered',
-    style: {
-      'background-color': '#d9fff1',
-      'border-color': '#0f766e',
-      'border-width': 3,
-    },
-  },
-  {
-    selector: '.is-highlighted',
-    style: {
-      'background-color': '#ffd166',
-      'border-color': '#111827',
-      'border-width': 4,
-      opacity: 1,
-    },
-  },
-  {
-    selector: '.is-liked',
-    style: {
-      'background-color': '#86efac',
-      'border-color': '#166534',
-      'border-width': 4,
-    },
-  },
-  {
-    selector: '.is-disliked',
-    style: {
-      'background-color': '#fecaca',
-      'border-color': '#b91c1c',
-      'border-width': 3,
-      opacity: 0.2,
-    },
-  },
-  {
-    selector: '.is-focused-search',
-    style: {
-      'background-color': '#fbbf24',
-      'border-color': '#7c2d12',
-      'border-width': 5,
-      width: 68,
-      height: 68,
-    },
-  },
-  {
-    selector: '.is-dimmed',
-    style: {
-      opacity: 0.18,
-    },
-  },
-  {
-    selector: '.is-hidden',
-    style: {
-      opacity: 0.08,
-    },
-  },
-  {
-    selector: '.is-edge-visible',
-    style: {
-      opacity: 0.95,
-      width: 3,
-      'line-color': '#f59e0b',
-      'target-arrow-color': '#f59e0b',
-    },
-  },
-]
-
 function toElements(data: GraphData): ElementDefinition[] {
-  return [...data.nodes, ...data.edges]
+  return [...data.nodes, ...data.edges].map((element) => ({
+    ...element,
+    data: {
+      ...element.data,
+      degree:
+        'source' in element.data
+          ? 0
+          : 0,
+    },
+  }))
 }
 
 function toNodeEvent(node: cytoscape.NodeSingular): KnowledgeGraphNodeEvent {
@@ -191,7 +58,8 @@ export function KnowledgeGraph({
   likedNodeIds = [],
   dislikedNodeIds = [],
   focusedNodeId = null,
-  layoutName = 'breadthfirst',
+  layoutName = 'fcose',
+  wheelSensitivity = 0.009,
   onNodeClick,
   onNodeHover,
 }: KnowledgeGraphProps) {
@@ -201,7 +69,13 @@ export function KnowledgeGraph({
   const interactionTimeoutRef = useRef<number | null>(null)
   const onNodeClickRef = useRef(onNodeClick)
   const onNodeHoverRef = useRef(onNodeHover)
+  const previousDataSizeRef = useRef(0)
   const setGraphInteraction = useGraphStore((state) => state.setGraphInteraction)
+
+  const layoutMode = useMemo(
+    () => getGraphLayoutMode(layoutName, data.nodes.length),
+    [data.nodes.length, layoutName],
+  )
 
   useEffect(() => {
     onNodeClickRef.current = onNodeClick
@@ -243,30 +117,32 @@ export function KnowledgeGraph({
       container: containerRef.current,
       elements: toElements(data),
       style: knowledgeGraphStyles,
-      layout: {
-        name: layoutName,
-        directed: true,
-        padding: 20,
-        spacingFactor: 1.12,
-        animate: true,
-        animationDuration: 300,
-      },
-      minZoom: 0.45,
-      maxZoom: 2.2,
-      wheelSensitivity: 0.18,
+      layout: buildGraphLayoutOptions(layoutMode, {
+        nodeCount: data.nodes.length,
+        incremental: false,
+      }) as unknown as LayoutOptions,
+      minZoom: 0.4,
+      maxZoom: 2,
+      wheelSensitivity,
       autoungrabify: false,
       autounselectify: false,
       boxSelectionEnabled: false,
       userZoomingEnabled: true,
       userPanningEnabled: true,
+      motionBlur: true,
+      motionBlurOpacity: 0.12,
+      textureOnViewport: true,
+      hideEdgesOnViewport: data.nodes.length > 1000,
+      hideLabelsOnViewport: data.nodes.length > 700,
     })
 
     cy.on('tap', 'node', (event) => {
-      if (!onNodeClickRef.current) {
-        return
-      }
+      onNodeClickRef.current?.(toNodeEvent(event.target))
+    })
 
-      onNodeClickRef.current(toNodeEvent(event.target))
+    cy.on('dbltap', 'node', (event) => {
+      const neighborhood = event.target.closedNeighborhood()
+      cy.fit(neighborhood, 80)
     })
 
     cy.on('mouseover', 'node', (event) => {
@@ -285,6 +161,10 @@ export function KnowledgeGraph({
 
     cy.on('mouseout', 'edge.bridge-edge', (event) => {
       event.target.removeClass('is-bridge-hovered')
+    })
+
+    cy.on('dragfree', 'node', () => {
+      releaseInteraction(120)
     })
 
     cy.on('dragpan', () => {
@@ -312,13 +192,14 @@ export function KnowledgeGraph({
     })
 
     cyRef.current = cy
+    previousDataSizeRef.current = data.nodes.length
 
     return () => {
       releaseInteraction(0)
       cy.destroy()
       cyRef.current = null
     }
-  }, [layoutName, setGraphInteraction])
+  }, [layoutMode, setGraphInteraction])
 
   useEffect(() => {
     const cy = cyRef.current
@@ -327,20 +208,26 @@ export function KnowledgeGraph({
       return
     }
 
+    const prevSize = previousDataSizeRef.current
+    const nextSize = data.nodes.length
+    const incremental = nextSize > prevSize
+
     cy.batch(() => {
       cy.elements().remove()
       cy.add(toElements(data))
     })
 
-    cy.layout({
-      name: layoutName,
-      directed: true,
-      padding: 20,
-      spacingFactor: 1.12,
-      animate: true,
-      animationDuration: 300,
-    }).run()
-  }, [data, layoutName])
+    cy
+      .layout(
+        buildGraphLayoutOptions(layoutMode, {
+          nodeCount: nextSize,
+          incremental,
+        }) as unknown as LayoutOptions,
+      )
+      .run()
+
+    previousDataSizeRef.current = nextSize
+  }, [data, layoutMode])
 
   useEffect(() => {
     const cy = cyRef.current
@@ -434,6 +321,8 @@ export function KnowledgeGraph({
       cy.nodes().forEach((node) => {
         const nodeId = node.id()
 
+        node.data('degree', node.connectedEdges().length)
+
         if (disliked.has(nodeId)) {
           node.addClass('is-disliked')
         }
@@ -492,6 +381,26 @@ export function KnowledgeGraph({
     likedNodeIds,
     visibleEdgeIds,
   ])
+
+  useEffect(() => {
+    const cy = cyRef.current
+
+    if (!cy || !focusedNodeId) {
+      return
+    }
+
+    const focusedNode = cy.getElementById(focusedNodeId)
+
+    if (!focusedNode.nonempty()) {
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      focusedNode.select()
+      cy.fit(focusedNode, 100)
+      cy.center(focusedNode)
+    })
+  }, [focusedNodeId])
 
   return (
     <div

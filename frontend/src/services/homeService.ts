@@ -1,5 +1,16 @@
-import { companyGraph, jobGraph, skillGraph } from '../graph/data'
+import {
+  PANEL_TO_CATEGORY_LABEL,
+  toCytoscapeGraph,
+} from '../graph/data'
+import { getNodesByCategory } from './graphApi'
 import type { GraphData, GraphPanelId, HomeContent } from '../types/graph'
+
+const graphCache = new Map<GraphPanelId, GraphData>()
+
+const EMPTY_GRAPH: GraphData = {
+  nodes: [],
+  edges: [],
+}
 
 export function getHomeContent(): HomeContent {
   return {
@@ -10,14 +21,47 @@ export function getHomeContent(): HomeContent {
   }
 }
 
+async function getCategoryGraph(
+  panelId: GraphPanelId,
+  signal?: AbortSignal,
+): Promise<GraphData> {
+  const graph = await getNodesByCategory(PANEL_TO_CATEGORY_LABEL[panelId], {
+    limit: 180,
+    signal,
+  })
+  const transformed = toCytoscapeGraph(graph)
+  graphCache.set(panelId, transformed)
+  return transformed
+}
+
+export async function getSkillGraph(signal?: AbortSignal) {
+  return getCategoryGraph('skill', signal)
+}
+
+export async function getRoleGraph(signal?: AbortSignal) {
+  return getCategoryGraph('job', signal)
+}
+
+export async function getCompanyGraph(signal?: AbortSignal) {
+  return getCategoryGraph('company', signal)
+}
+
 export function getGraphByPanel(panelId: GraphPanelId): GraphData {
+  return graphCache.get(panelId) ?? EMPTY_GRAPH
+}
+
+export function setGraphByPanel(panelId: GraphPanelId, graph: GraphData) {
+  graphCache.set(panelId, graph)
+}
+
+export function getPanelGraphLoader(panelId: GraphPanelId) {
   if (panelId === 'skill') {
-    return skillGraph
+    return getSkillGraph
   }
 
   if (panelId === 'company') {
-    return companyGraph
+    return getCompanyGraph
   }
 
-  return jobGraph
+  return getRoleGraph
 }

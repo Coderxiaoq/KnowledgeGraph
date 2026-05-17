@@ -1,206 +1,379 @@
+import axios from 'axios'
+import type { AxiosError, AxiosRequestConfig } from 'axios'
 import type {
-  FilterCondition,
-  FilterState,
+  ApiEnvelope,
   GraphEdge,
+  GraphFilter,
+  GraphFilterState,
   GraphNode,
   GraphResponse,
   Recommend2To1Params,
+  RecommendQuery,
   RecommendResponse,
+  RecommendType,
   SearchNodesParams,
+  SearchNodesResponse,
 } from '../types/graphApi'
 
-const DEFAULT_TIMEOUT = 10000
-const DEFAULT_HEADERS: HeadersInit = {
-  'Content-Type': 'application/json',
+function normalizeApiBaseUrl(rawBaseUrl: string | undefined) {
+  const fallback = 'http://localhost:8000/api/graph'
+
+  if (!rawBaseUrl?.trim()) {
+    return fallback
+  }
+
+  const normalized = rawBaseUrl.trim().replace(/\/$/, '')
+
+  if (normalized.endsWith('/api/graph')) {
+    return normalized
+  }
+
+  return `${normalized}/api/graph`
 }
 
-export const BASE_URL =
-  import.meta.env.VITE_GRAPH_API_BASE_URL?.replace(/\/$/, '') ?? ''
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_GRAPH_API_BASE_URL)
 
-export class ApiError extends Error {
+const REQUEST_TIMEOUT = 10000
+const searchTimers = new Map<string, number>()
+
+export class GraphApiError extends Error {
   status: number
+  code?: number
   details?: unknown
 
-  constructor(message: string, status: number, details?: unknown) {
+  constructor(message: string, status: number, details?: unknown, code?: number) {
     super(message)
-    this.name = 'ApiError'
+    this.name = 'GraphApiError'
     this.status = status
     this.details = details
+    this.code = code
   }
 }
 
-type RequestOptions = Omit<RequestInit, 'body'> & {
-  timeout?: number
-  query?: Record<string, string | number | boolean | undefined>
-  body?: unknown
-}
+const graphApi = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: REQUEST_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
-function buildUrl(path: string, query?: RequestOptions['query']) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const url = new URL(`${BASE_URL}${normalizedPath}`, window.location.origin)
-
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      if (value === undefined) {
-        return
-      }
-
-      url.searchParams.set(key, String(value))
-    })
-  }
-
-  return url.toString()
-}
-
-async function parseJsonSafely(response: Response) {
-  const contentType = response.headers.get('content-type') ?? ''
-
-  if (!contentType.includes('application/json')) {
-    return null
-  }
-
-  try {
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
-export async function request<T>(
-  path: string,
-  { timeout = DEFAULT_TIMEOUT, query, headers, body, ...init }: RequestOptions = {},
-): Promise<T> {
-  const controller = new AbortController()
-  const timer = window.setTimeout(() => controller.abort(), timeout)
-
-  try {
-    const response = await fetch(buildUrl(path, query), {
-      ...init,
-      headers: {
-        ...DEFAULT_HEADERS,
-        ...headers,
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: controller.signal,
-    })
-
-    const payload = await parseJsonSafely(response)
-
-    if (!response.ok) {
-      const message =
-        (payload as { message?: string } | null)?.message ??
-        `Request failed with status ${response.status}`
-
-      throw new ApiError(message, response.status, payload)
+graphApi.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject(
+        new GraphApiError('Request cancelled', 499, error.response?.data),
+      )
     }
 
-    return payload as T
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error
-    }
+    const payload = error.response?.data as Partial<ApiEnvelope<unknown>> | undefined
+    const message =
+      payload?.msg ??
+      error.message ??
+      `Request failed with status ${error.response?.status ?? 500}`
 
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new ApiError('Request timeout', 408)
-    }
-
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Unknown network error',
-      500,
+    return Promise.reject(
+      new GraphApiError(
+        message,
+        error.response?.status ?? 500,
+        error.response?.data,
+        payload?.code,
+      ),
     )
-  } finally {
-    window.clearTimeout(timer)
+  },
+)
+
+async function unwrapData<T>(config: AxiosRequestConfig): Promise<T> {
+  const response = await graphApi.request<ApiEnvelope<T>>(config)
+  return response.data.data
+}
+
+function withOptionalSignal(
+  signal?: AbortSignal,
+): Pick<AxiosRequestConfig, 'signal'> | Record<string, never> {
+  return signal ? { signal } : {}
+}
+
+function debouncePromise<T>(
+  key: string,
+  waitMs: number,
+  factory: () => Promise<T>,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const existing = searchTimers.get(key)
+
+    if (existing) {
+      window.clearTimeout(existing)
+    }
+
+    const timer = window.setTimeout(() => {
+      searchTimers.delete(key)
+      void factory().then(resolve).catch(reject)
+    }, waitMs)
+
+    searchTimers.set(key, timer)
+  })
+}
+
+export const RecommendTypeEnum = {
+  SkillToRole: 'skill_to_role',
+  RoleToCompany: 'role_to_company',
+  CompanyToRole: 'company_to_role',
+} as const
+
+function isStrictRecommendQuery(params: Recommend2To1Params): params is RecommendQuery {
+  return 'type' in params && 'id1' in params && 'id2' in params
+}
+
+function deriveRecommendQuery(params: Recommend2To1Params): RecommendQuery {
+  if (isStrictRecommendQuery(params)) {
+    return params
+  }
+
+  const { selected, targetArea, limit, signal } = params
+
+  if (targetArea === 'job') {
+    const [id1, id2] = selected.skillNodeIds ?? []
+
+    if (!id1 || !id2) {
+      throw new GraphApiError(
+        'recommend/2to1 requires exactly two skill node ids for skill_to_role',
+        400,
+      )
+    }
+
+    return {
+      type: RecommendTypeEnum.SkillToRole,
+      id1,
+      id2,
+      limit,
+      signal,
+    }
+  }
+
+  if (targetArea === 'company') {
+    const [id1, id2] = selected.jobNodeIds ?? []
+
+    if (!id1 || !id2) {
+      throw new GraphApiError(
+        'recommend/2to1 requires exactly two role node ids for role_to_company',
+        400,
+      )
+    }
+
+    return {
+      type: RecommendTypeEnum.RoleToCompany,
+      id1,
+      id2,
+      limit,
+      signal,
+    }
+  }
+
+  const [id1, id2] = selected.companyNodeIds ?? []
+
+  if (!id1 || !id2) {
+    throw new GraphApiError(
+      'recommend/2to1 requires exactly two company node ids for company_to_role',
+      400,
+    )
+  }
+
+  return {
+    type: RecommendTypeEnum.CompanyToRole,
+    id1,
+    id2,
+    limit,
+    signal,
   }
 }
 
-export function getAllNodes() {
-  return request<GraphNode[]>('/api/graph/nodes', {
+export type {
+  GraphNode,
+  GraphEdge,
+  GraphResponse,
+  GraphFilter,
+  GraphFilterState,
+  RecommendResponse,
+  RecommendType,
+}
+
+export async function getAllNodes(signal?: AbortSignal): Promise<GraphNode[]> {
+  return unwrapData<GraphNode[]>({
     method: 'GET',
+    url: '/nodes',
+    ...withOptionalSignal(signal),
   })
 }
 
-export function getAllEdges() {
-  return request<GraphEdge[]>('/api/graph/edges', {
+export async function getAllEdges(signal?: AbortSignal): Promise<GraphEdge[]> {
+  return unwrapData<GraphEdge[]>({
     method: 'GET',
+    url: '/edges',
+    ...withOptionalSignal(signal),
   })
 }
 
-export function searchNodes({ keyword, nodeType, label }: SearchNodesParams) {
-  return request<GraphResponse>('/api/graph/search', {
-    method: 'GET',
-    query: {
-      keyword,
-      nodeType,
-      label,
-    },
-  })
-}
+export async function searchNodes({
+  keyword,
+  debounceMs = 250,
+  signal,
+}: SearchNodesParams): Promise<SearchNodesResponse> {
+  const normalizedKeyword = keyword.trim()
 
-export function expandNode(nodeId: string) {
-  return request<GraphResponse>(`/api/graph/expand/${encodeURIComponent(nodeId)}`, {
-    method: 'GET',
-  })
-}
+  if (!normalizedKeyword) {
+    return {
+      nodes: [],
+      edges: [],
+    }
+  }
 
-export function expandNode2Hop(nodeId: string) {
-  return request<GraphResponse>(
-    `/api/graph/expand/2hop/${encodeURIComponent(nodeId)}`,
-    {
+  return debouncePromise(`search:${normalizedKeyword.toLowerCase()}`, debounceMs, () =>
+    unwrapData<GraphResponse>({
       method: 'GET',
-    },
+      url: '/search',
+      params: {
+        keyword: normalizedKeyword,
+      },
+      ...withOptionalSignal(signal),
+    }),
   )
 }
 
-export function getNodesByCategory(label: string) {
-  return request<GraphResponse>(`/api/graph/category/${encodeURIComponent(label)}`, {
+export async function expandNode(
+  nodeId: string,
+  signal?: AbortSignal,
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
     method: 'GET',
+    url: `/expand/${encodeURIComponent(nodeId)}`,
+    ...withOptionalSignal(signal),
   })
 }
 
-export function recommend2To1(params: Recommend2To1Params) {
-  return request<RecommendResponse>('/api/graph/recommend/2to1', {
+export async function expandNode2Hop(
+  nodeId: string,
+  options?: {
+    limit?: number
+    signal?: AbortSignal
+  },
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
     method: 'GET',
-    query: {
-      sourceAreas: params.sourceAreas.join(','),
-      targetArea: params.targetArea,
-      limit: params.limit,
-      skillNodeIds: params.selected.skillNodeIds?.join(','),
-      jobNodeIds: params.selected.jobNodeIds?.join(','),
-      companyNodeIds: params.selected.companyNodeIds?.join(','),
-      filters: params.filters ? JSON.stringify(params.filters) : undefined,
+    url: `/expand/2hop/${encodeURIComponent(nodeId)}`,
+    params: {
+      limit: options?.limit,
     },
+    ...withOptionalSignal(options?.signal),
   })
 }
 
-export function getFilters() {
-  return request<FilterState>('/api/graph/filter', {
+export async function getNodesByCategory(
+  label: string,
+  options?: {
+    limit?: number
+    signal?: AbortSignal
+  },
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
     method: 'GET',
+    url: `/category/${encodeURIComponent(label)}`,
+    params: {
+      limit: options?.limit,
+    },
+    ...withOptionalSignal(options?.signal),
   })
 }
 
-export function setFilters(filters: FilterState) {
-  return request<FilterState>('/api/graph/filter', {
-    method: 'POST',
-    body: filters,
+export async function recommend2To1(
+  params: Recommend2To1Params,
+): Promise<RecommendResponse> {
+  const query = deriveRecommendQuery(params)
+
+  return unwrapData<RecommendResponse>({
+    method: 'GET',
+    url: '/recommend/2to1',
+    params: {
+      type: query.type,
+      id1: query.id1,
+      id2: query.id2,
+      limit: query.limit,
+    },
+    ...withOptionalSignal(query.signal),
   })
 }
 
-export function addFilter(filter: FilterCondition) {
-  return request<FilterState>('/api/graph/filter/add', {
-    method: 'POST',
-    body: filter,
+export async function getFilters(
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  return unwrapData<GraphFilterState>({
+    method: 'GET',
+    url: '/filter',
+    ...withOptionalSignal(signal),
   })
 }
 
-export function removeFilter(filter: FilterCondition) {
-  return request<FilterState>('/api/graph/filter/remove', {
+export async function setFilters(
+  filters: GraphFilterState,
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  return unwrapData<GraphFilterState>({
     method: 'POST',
-    body: filter,
+    url: '/filter',
+    data: filters,
+    ...withOptionalSignal(signal),
   })
 }
 
-export function clearFilters() {
-  return request<FilterState>('/api/graph/filter/clear', {
+export async function addFilter(
+  filter: GraphFilter,
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  return unwrapData<GraphFilterState>({
     method: 'POST',
+    url: '/filter/add',
+    data: filter,
+    ...withOptionalSignal(signal),
   })
 }
+
+export async function removeFilter(
+  filter: GraphFilter,
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  return unwrapData<GraphFilterState>({
+    method: 'POST',
+    url: '/filter/remove',
+    data: filter,
+    ...withOptionalSignal(signal),
+  })
+}
+
+export async function clearFilters(
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  return unwrapData<GraphFilterState>({
+    method: 'POST',
+    url: '/filter/clear',
+    ...withOptionalSignal(signal),
+  })
+}
+
+export async function syncDislikeFilters(
+  filters: GraphFilter[],
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  if (filters.length === 0) {
+    return clearFilters(signal)
+  }
+
+  return setFilters(
+    {
+      node_filters: filters,
+      edge_filters: [],
+    },
+    signal,
+  )
+}
+
