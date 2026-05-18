@@ -1,7 +1,12 @@
-from typing import Literal
-from fastapi import APIRouter, Depends, Query, Path, HTTPException
+from fastapi import APIRouter, Depends, Query, Path
 from core.connect import get_db_session
-from models.graph import GraphDataResponse, GraphFilterOption, GraphFilterSetRequest, GraphFilterState
+from models.graph import (
+    GraphDataResponse,
+    GraphFilterOption,
+    GraphFilterSetRequest,
+    GraphFilterState,
+    Recommend2To1Request,
+)
 from service.graph_service import GraphService
 from service.algo_service import RecommendService
 
@@ -143,31 +148,29 @@ async def get_category_nodes(
     graph_data = GraphService.get_nodes_by_category(session, label=label, limit=limit)
     return GraphDataResponse(data=graph_data)
 
-@router.get("/recommend/2to1", response_model=GraphDataResponse, summary="2选1推荐")
+@router.post("/recommend/2to1", response_model=GraphDataResponse, summary="2选1推荐")
 async def get_2to1_recommendation(
-    type: Literal["skill_to_role", "role_to_company", "company_to_role"] = Query(
-        ...,
-        description="推荐类型：skill_to_role / role_to_company / company_to_role"
-    ),
-    id1: str = Query(..., description="第一个输入节点ID"),
-    id2: str = Query(..., description="第二个输入节点ID"),
-    limit: int = Query(3, ge=1, le=20, description="返回推荐数量上限"),
-    session = Depends(get_db_session)
-)-> GraphDataResponse:
+    payload: Recommend2To1Request,
+    session=Depends(get_db_session),
+) -> GraphDataResponse:
     """
-    两个同类节点推荐一个目标节点：
-    - skill_to_role: 2个技能 -> 推荐岗位
-    - role_to_company: 2个岗位 -> 推荐公司
-    - company_to_role: 2家公司 -> 推荐岗位
+    三种二推一推荐都走同一个入口，request body 里传 4 个偏好列表：
+    - primary_pos_list / primary_neg_list
+    - secondary_pos_list / secondary_neg_list
+
+    `type` 决定这两组列表分别代表哪两类节点：
+    - skill_to_role: 技能 + 公司 -> 岗位
+    - role_to_company: 技能 + 岗位 -> 公司
+    - company_to_role: 岗位 + 公司 -> 技能
     """
-    if type == "skill_to_role":
-        data = RecommendService.recommend_role_by_skills(session, [id1, id2], limit=limit)
-    elif type == "role_to_company":
-        data = RecommendService.recommend_company_by_roles(session, [id1, id2], limit=limit)
-    elif type == "company_to_role":
-        data = RecommendService.recommend_role_by_companies(session, [id1, id2], limit=limit)
-    else:
-        # 正常情况下 Literal 已经会拦截，这里保留兜底防御
-        raise HTTPException(status_code=400, detail="invalid recommend type")
+    data = RecommendService.recommend_2to1_linkage(
+        session,
+        recommend_type=payload.type,
+        primary_pos_list=payload.primary_pos_list,
+        primary_neg_list=payload.primary_neg_list,
+        secondary_pos_list=payload.secondary_pos_list,
+        secondary_neg_list=payload.secondary_neg_list,
+        limit=payload.limit,
+    )
 
     return GraphDataResponse(data=data)

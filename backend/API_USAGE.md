@@ -264,21 +264,32 @@ curl -X GET "http://localhost:8000/api/graph/category/Skill?limit=50"
 
 ## 4. 推荐接口
 
+> 更详细的分数规则和组合链说明见 [推荐算法说明.md](推荐算法说明.md)
+
 ### 4.1 2 选 1 推荐
 
-- 方法: `GET`
+- 方法: `POST`
 - 路径: `/recommend/2to1`
-- 参数:
+- 请求体:
   - `type` (必填):
-    - `skill_to_role`: 两个技能推荐岗位
-    - `role_to_company`: 两个岗位推荐公司
-    - `company_to_role`: 两个公司推荐岗位
-  - `id1` (必填): 第一个输入节点 ID
-  - `id2` (必填): 第二个输入节点 ID
+    - `skill_to_role`: 技能 + 公司 -> 岗位
+    - `role_to_company`: 技能 + 岗位 -> 公司
+    - `company_to_role`: 岗位 + 公司 -> 技能
+  - `primary_pos_list` / `primary_neg_list`: 第一种节点的正/负偏好列表
+  - `secondary_pos_list` / `secondary_neg_list`: 第二种节点的正/负偏好列表
   - `limit` (可选): 默认 `3`，范围 `1~20`
 
 ```bash
-curl -X GET "http://localhost:8000/api/graph/recommend/2to1?type=skill_to_role&id1=s1&id2=s2&limit=3"
+curl -X POST "http://localhost:8000/api/graph/recommend/2to1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "skill_to_role",
+    "primary_pos_list": ["s1", "s2"],
+    "primary_neg_list": ["s9"],
+    "secondary_pos_list": ["c1"],
+    "secondary_neg_list": ["c9"],
+    "limit": 3
+  }'
 ```
 
 ---
