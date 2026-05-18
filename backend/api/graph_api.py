@@ -17,14 +17,20 @@ def _build_filter_state(state: dict) -> GraphFilterState:
 
 @router.get("/filter", response_model=GraphFilterState, summary="获取全局过滤器")
 async def get_global_filter_state():
-    """获取当前全局过滤器状态，前端可用于回显已选过滤项。"""
+    """获取当前全局过滤器状态，前端可用于回显已选过滤项。
+
+    返回的过滤项 `GraphFilterOption` 包含新增字段 `mode`，可取 `positive`（保留规则）或 `negative`（剔除规则，默认）。
+    """
     state = GraphService.get_global_filter()
     return _build_filter_state(state)
 
 
 @router.post("/filter", response_model=GraphFilterState, summary="覆盖设置全局过滤器")
 async def set_global_filter_state(payload: GraphFilterSetRequest):
-    """一次性覆盖全局过滤器（节点过滤 + 边过滤）。"""
+    """一次性覆盖全局过滤器（节点过滤 + 边过滤）。
+
+    请求体中每个过滤项可包含 `mode` 字段，决定该规则为正过滤还是负过滤。
+    """
     state = GraphService.set_global_filter(
         node_filters=[item.model_dump() for item in payload.node_filters],
         edge_filters=[item.model_dump() for item in payload.edge_filters],
@@ -34,14 +40,17 @@ async def set_global_filter_state(payload: GraphFilterSetRequest):
 
 @router.post("/filter/add", response_model=GraphFilterState, summary="新增一个全局过滤选项")
 async def add_global_filter_option(option: GraphFilterOption):
-    """新增单条过滤选项。"""
+    """新增单条过滤选项。可在 `option.mode` 中指定 `positive` 或 `negative`（默认）。"""
     state = GraphService.add_filter_option(option.model_dump())
     return _build_filter_state(state)
 
 
 @router.post("/filter/remove", response_model=GraphFilterState, summary="删除一个全局过滤选项")
 async def remove_global_filter_option(option: GraphFilterOption):
-    """删除与请求体完全匹配的过滤选项。"""
+    """删除与请求体完全匹配的过滤选项。
+
+    注意：删除时 `option` 需要与存储中的规则完全一致（包含 `mode` 字段）。
+    """
     state = GraphService.remove_filter_option(option.model_dump())
     return _build_filter_state(state)
 
