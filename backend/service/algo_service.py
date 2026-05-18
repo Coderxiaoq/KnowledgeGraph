@@ -6,6 +6,8 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable, Literal
 
+from service.fliter_service import _to_jsonable
+
 
 class CareerLinkageLogic:
     """
@@ -107,7 +109,7 @@ class CareerLinkageLogic:
         return {
             "id": cls._node_id(node),
             "label": cls.NODE_LABEL_MAP.get(node_kind, "Unknown"),
-            "properties": dict(node) if node is not None else {},
+            "properties": _to_jsonable(dict(node)) if node is not None else {},
         }
 
     @staticmethod
@@ -116,7 +118,7 @@ class CareerLinkageLogic:
             "source": source_id,
             "target": target_id,
             "relation": edge.type,
-            "properties": dict(edge) if edge is not None else {},
+            "properties": _to_jsonable(dict(edge)) if edge is not None else {},
         }
 
     @classmethod
@@ -313,8 +315,11 @@ class CareerLinkageLogic:
     @classmethod
     def _aggregate_combo_chains(
         cls,
+        session,
         recommend_type: str,
         chains: list[Dict[str, Any]],
+        type_config: Dict[str, Any],
+        preference_sets: Dict[str, set[str]],
         limit: int,
     ) -> list[Dict[str, Any]]:
         # 组合链按“同一推荐锚点”聚合，最终 score 先用单链分数总和再除以链条数。
@@ -371,6 +376,20 @@ class CareerLinkageLogic:
         for (left_id, right_id), group in grouped.items():
             member_count = max(1, group["member_count"])
             average_score = group["score"] / member_count
+
+            expanded = cls._expand_combo_group(
+                session,
+                recommend_type=recommend_type,
+                left_id=left_id,
+                right_id=right_id,
+                preference_sets=preference_sets,
+                type_config=type_config,
+            )
+            if expanded:
+                group = expanded
+                member_count = max(1, group["member_count"])
+                average_score = group["score"] / member_count
+
             combo_chains.append(
                 {
                     "group_key": {"left_id": left_id, "right_id": right_id},
@@ -383,7 +402,7 @@ class CareerLinkageLogic:
                     "member_scores": group["member_scores"],
                     "matched_positive_ids": group["matched_positive_ids"],
                     "matched_negative_ids": group["matched_negative_ids"],
-                    "reason": f"avg_score={average_score:.2f} || " + " || ".join(group["reason_parts"]),
+                    "reason": f"avg_score={average_score:.2f} || " + " || ".join(group.get("reason_parts", [])),
                     "nodes": list(group["nodes"].values()),
                     "edges": group["edges"],
                 }
@@ -391,6 +410,122 @@ class CareerLinkageLogic:
 
         combo_chains.sort(key=lambda item: item["score"], reverse=True)
         return combo_chains[:limit]
+
+    @classmethod
+    def _expand_combo_group(
+        cls,
+        session,
+        recommend_type: str,
+        left_id: str,
+        right_id: str,
+        preference_sets: Dict[str, set[str]],
+        type_config: Dict[str, Any],
+    ) -> Dict[str, Any] | None:
+        """按组合键重新拉取该组下的所有单链条。"""
+        if recommend_type == "skill_to_role":
+            query = """
+            MATCH (company:Company {company_id: $right_id})-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
+            MATCH (role)-[requirement:REQUIRES]->(skill:Skill)
+            RETURN company, recruit, role, requirement, skill
+            """
+            result = session.run(query, left_id=left_id, right_id=right_id)
+        elif recommend_type == "role_to_company":
+            query = """
+            MATCH (company:Company {company_id: $left_id})-[recruit:RECRUITS]->(role:Role)
+            MATCH (role)-[requirement:REQUIRES]->(skill:Skill {skill_id: $right_id})
+            RETURN company, recruit, role, requirement, skill
+            """
+            result = session.run(query, left_id=left_id, right_id=right_id)
+        else:
+            query = """
+            MATCH (company:Company)-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
+            MATCH (role)-[requirement:REQUIRES]->(skill:Skill {skill_id: $right_id})
+            RETURN company, recruit, role, requirement, skill
+            """
+            result = session.run(query, left_id=left_id, right_id=right_id)
+
+        members: list[Dict[str, Any]] = []
+        seen_member_keys: set[tuple[str | None, str | None, str | None]] = set()
+
+        for record in result:
+            company = record.get("company")
+            recruit = record.get("recruit")
+            role = record.get("role")
+            requirement = record.get("requirement")
+            skill = record.get("skill")
+
+            company_id = cls._node_id(company)
+            role_id = cls._node_id(role)
+            skill_id = cls._node_id(skill)
+
+            member_key = (company_id, role_id, skill_id)
+            if not company_id or not role_id or not skill_id or member_key in seen_member_keys:
+                continue
+            seen_member_keys.add(member_key)
+
+            members.append(
+                cls._score_chain(
+                    company,
+                    recruit,
+                    role,
+                    requirement,
+                    skill,
+                    type_config=type_config,
+                    preference_sets=preference_sets,
+                )
+            )
+
+        if not members:
+            return None
+
+        total_score = sum(item["score"] for item in members)
+        member_count = len(members)
+        average_score = total_score / member_count
+
+        nodes_dict: Dict[str, Dict[str, Any]] = {}
+        edges_list: list[Dict[str, Any]] = []
+        edge_seen = set()
+        matched_positive_ids: list[str] = []
+        matched_negative_ids: list[str] = []
+        reason_parts: list[str] = []
+
+        for item in members:
+            for node in item["nodes"].values():
+                node_id = node.get("id")
+                if node_id and node_id not in nodes_dict:
+                    nodes_dict[node_id] = node
+
+            for edge in item["edges"]:
+                edge_key = (edge["source"], edge["target"], edge["relation"])
+                if edge_key not in edge_seen:
+                    edge_seen.add(edge_key)
+                    edges_list.append(edge)
+
+            for node_id in item["matched_positive_ids"]:
+                if node_id not in matched_positive_ids:
+                    matched_positive_ids.append(node_id)
+
+            for node_id in item["matched_negative_ids"]:
+                if node_id not in matched_negative_ids:
+                    matched_negative_ids.append(node_id)
+
+            reason_parts.append(item["reason"])
+
+        return {
+            "score": total_score,
+            "base_score": sum(item["base_score"] for item in members),
+            "preference_score": sum(item["preference_score"] for item in members),
+            "pair_bonus": 0.0,
+            "matched_positive_ids": matched_positive_ids,
+            "matched_negative_ids": matched_negative_ids,
+            "reason": f"avg_score={average_score:.2f} || " + " || ".join(reason_parts),
+            "nodes": nodes_dict,
+            "edges": edges_list,
+            "member_scores": [item["score"] for item in members],
+            "member_count": member_count,
+            "reason_parts": reason_parts,
+            "edge_seen": edge_seen,
+        }
 
     @classmethod
     def _recommend_chains(
@@ -462,7 +597,17 @@ class CareerLinkageLogic:
 
         ranked_chains.sort(key=lambda item: item["score"], reverse=True)
 
-        combo_chains = cls._aggregate_combo_chains(recommend_type, ranked_chains, limit)
+        combo_chains = cls._aggregate_combo_chains(
+            session,
+            recommend_type,
+            ranked_chains,
+            type_config,
+            preference_sets,
+            limit,
+        )
+
+        # 单链条候选可能很多，docs 里完整返回会非常重；这里只保留一小段预览。
+        single_chain_preview_limit = min(len(ranked_chains), max(limit * 3, 10))
 
         nodes_dict: Dict[str, Dict[str, Any]] = {}
         edges_list: list[Dict[str, Any]] = []
@@ -483,7 +628,7 @@ class CareerLinkageLogic:
             "nodes": list(nodes_dict.values()),
             "edges": edges_list,
             "chains": combo_chains,
-            "single_chains": ranked_chains,
+            "single_chains": ranked_chains[:single_chain_preview_limit],
         }
 
     @classmethod
