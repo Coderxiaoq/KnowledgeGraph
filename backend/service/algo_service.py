@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from typing import Any, Dict, Iterable, Literal
 
@@ -18,7 +19,11 @@ class CareerLinkageLogic:
     - role_to_company: skill + role -> company
     - company_to_role: role + company -> skill
 
-    统一的执行方式是：先查出所有相关的 company-role-skill 链条，再用偏好列表评分排序。
+    统一的执行方式是：
+    1. 先查出所有相关的 company-role-skill 单链条；
+    2. 对每条单链条计算边分与节点偏好系数；
+    3. 按推荐锚点做组内展开；
+    4. 对组合链条做平均分排序并返回。
     """
 
     TYPE_CONFIG: Dict[str, Dict[str, Any]] = {
@@ -63,13 +68,13 @@ class CareerLinkageLogic:
         "company": "Company",
     }
 
-    PREFERENCE_WEIGHT = 5.0
-    NEGATIVE_WEIGHT = 7.0
+    PREFERENCE_WEIGHT = 3.0
+    NEGATIVE_WEIGHT = 1.5
     PAIR_BONUS = 3.0
     PROFICIENCY_MULTIPLIER = {
-        "精通": 1.3,
-        "熟悉": 1.1,
-        "掌握": 0.9,
+        "精通": 1.5,
+        "熟悉": 1.3,
+        "掌握": 1.1,
         "了解": 0.7,
     }
     URGENCY_SCORE = {
@@ -81,6 +86,7 @@ class CareerLinkageLogic:
 
     @classmethod
     def _node_id(cls, node) -> str | None:
+        """从 Neo4j 节点里提取统一 ID 字段。"""
         if node is None:
             return None
 
@@ -92,6 +98,7 @@ class CareerLinkageLogic:
 
     @classmethod
     def _node_kind(cls, node) -> str:
+        """识别节点属于 Skill / Role / Company 哪一类。"""
         if node is None:
             return "unknown"
 
@@ -105,6 +112,7 @@ class CareerLinkageLogic:
 
     @classmethod
     def _node_payload(cls, node) -> Dict[str, Any]:
+        """把 Neo4j 节点转换成前端可消费的统一 JSON 结构。"""
         node_kind = cls._node_kind(node)
         return {
             "id": cls._node_id(node),
@@ -114,6 +122,7 @@ class CareerLinkageLogic:
 
     @staticmethod
     def _edge_payload(edge, source_id: str, target_id: str) -> Dict[str, Any]:
+        """把 Neo4j 关系转换成前端可消费的统一 JSON 结构。"""
         return {
             "source": source_id,
             "target": target_id,
@@ -123,6 +132,7 @@ class CareerLinkageLogic:
 
     @classmethod
     def _normalize_ids(cls, ids: Iterable[str] | None) -> list[str]:
+        """过滤空值，保证传给 Cypher 的 ID 列表干净。"""
         if not ids:
             return []
 
@@ -138,6 +148,7 @@ class CareerLinkageLogic:
         primary_type: str,
         secondary_type: str,
     ) -> Dict[str, set[str]]:
+        """把两个维度的正负列表整理成便于 O(1) 命中的集合。"""
         return {
             f"{primary_type}_pos": set(cls._normalize_ids(primary_pos_list)),
             f"{primary_type}_neg": set(cls._normalize_ids(primary_neg_list)),
@@ -147,7 +158,13 @@ class CareerLinkageLogic:
 
     @classmethod
     def _parse_salary_score(cls, recruit) -> float:
-        # salary 允许是区间字符串或单个数值；这里统一折算成“万元级”分值。
+        """将薪资区间折算成统一的数值特征，供后续边分使用。
+
+        规则：
+        - 支持字符串区间，如 `30000-60000`
+        - 取上下限均值
+        - 再除以 `SALARY_DIVISOR`
+        """
         salary_value = recruit.get("salary")
         if not salary_value:
             return 0.0
@@ -179,16 +196,16 @@ class CareerLinkageLogic:
 
     @classmethod
     def _score_recruit_edge(cls, recruit) -> float:
-        # 公司 -> 岗位 这条边先给一个基础系数，后面再和 REQUIRES 边相乘。
+        """计算 `Company -> Role` 这一条招聘边的基础分。"""
         urgency_score = cls.URGENCY_SCORE.get(recruit.get("urgency"), 1.0)
-        salary_score = cls._parse_salary_score(recruit)
-        headcount_score = float(recruit.get("headcount") or 0)
+        salary_score = math.sqrt(cls._parse_salary_score(recruit))
+        headcount_score = 1.0-1.0/float(recruit.get("headcount") or 0)
 
         return urgency_score + salary_score + headcount_score
 
     @classmethod
     def _score_requirement_edge(cls, requirement, skill) -> float:
-        # 岗位 -> 技能 这条边以 weight 为底，再叠加熟练度、核心技能和软技能折减。
+        """计算 `Role -> Skill` 这一条要求边的基础分。"""
         requirement_score = float(requirement.get("weight") or 1.0)
         proficiency = str(requirement.get("proficiency") or "").strip()
         requirement_score *= cls.PROFICIENCY_MULTIPLIER.get(proficiency, 1.0)
@@ -207,7 +224,7 @@ class CareerLinkageLogic:
         positive_ids: set[str],
         negative_ids: set[str],
     ) -> tuple[float, list[str], list[str]]:
-        # 节点偏好只作为系数，不改动边本身的基础分。
+        """计算节点偏好系数，并返回命中的正/负向节点 ID。"""
         if not node_id:
             return 1.0, [], []
 
@@ -216,11 +233,11 @@ class CareerLinkageLogic:
         matched_negative = []
 
         if node_id in positive_ids:
-            multiplier *= 1.0 + cls.PREFERENCE_WEIGHT
+            multiplier *= cls.PREFERENCE_WEIGHT
             matched_positive.append(node_id)
 
         if node_id in negative_ids:
-            multiplier *= 1.0 / (1.0 + cls.NEGATIVE_WEIGHT)
+            multiplier *= -(cls.NEGATIVE_WEIGHT)
             matched_negative.append(node_id)
 
         return multiplier, matched_positive, matched_negative
@@ -237,6 +254,7 @@ class CareerLinkageLogic:
         type_config: Dict[str, Any],
         preference_sets: Dict[str, set[str]],
     ) -> Dict[str, Any]:
+        """计算单条 company-role-skill 链条的分数与解释信息。"""
         node_ids = {
             "skill": cls._node_id(skill),
             "role": cls._node_id(role),
@@ -265,7 +283,7 @@ class CareerLinkageLogic:
         matched_negative.extend(primary_negative)
         matched_negative.extend(secondary_negative)
 
-        # 单链条分数 = 两条边分数相乘，再乘两端节点偏好系数。
+        # 当前版本采用乘法模型：边分是主系数，节点偏好是倍率。
         edge_company_role = cls._score_recruit_edge(recruit)
         edge_role_skill = cls._score_requirement_edge(requirement, skill)
         total_score = edge_company_role * primary_multiplier * edge_role_skill * secondary_multiplier
@@ -302,6 +320,7 @@ class CareerLinkageLogic:
 
     @classmethod
     def _combo_group_key(cls, recommend_type: str, chain: Dict[str, Any]) -> tuple[str, str]:
+        """根据推荐类型决定组合链的分组锚点。"""
         nodes = chain["nodes"]
 
         if recommend_type == "skill_to_role":
@@ -322,7 +341,7 @@ class CareerLinkageLogic:
         preference_sets: Dict[str, set[str]],
         limit: int,
     ) -> list[Dict[str, Any]]:
-        # 组合链按“同一推荐锚点”聚合，最终 score 先用单链分数总和再除以链条数。
+        """把单链条聚合成组合链，并输出平均分排序结果。"""
         grouped: Dict[tuple[str, str], Dict[str, Any]] = {}
 
         for chain in chains:
@@ -421,7 +440,12 @@ class CareerLinkageLogic:
         preference_sets: Dict[str, set[str]],
         type_config: Dict[str, Any],
     ) -> Dict[str, Any] | None:
-        """按组合键重新拉取该组下的所有单链条。"""
+        """按组合键重新拉取该组下的所有单链条。
+
+        - skill_to_role: 以 role + company 为组，展开组内全部 skill
+        - role_to_company: 以 company + skill 为组，展开组内全部 role
+        - company_to_role: 以 role + skill 为组，展开组内全部 company
+        """
         if recommend_type == "skill_to_role":
             query = """
             MATCH (company:Company {company_id: $right_id})-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
@@ -538,6 +562,7 @@ class CareerLinkageLogic:
         secondary_neg_list: Iterable[str] | None,
         limit: int = 5,
     ) -> Dict[str, Any]:
+        """统一推荐入口：查单链、算分、聚合、裁剪预览。"""
         type_config = cls.TYPE_CONFIG[recommend_type]
 
         primary_ids = cls._normalize_ids(primary_pos_list) + cls._normalize_ids(primary_neg_list)
@@ -597,6 +622,7 @@ class CareerLinkageLogic:
 
         ranked_chains.sort(key=lambda item: item["score"], reverse=True)
 
+        # 聚合成组合链之后，再做一层摘要裁剪，避免 docs 响应过大。
         combo_chains = cls._aggregate_combo_chains(
             session,
             recommend_type,
@@ -693,7 +719,10 @@ class CareerLinkageLogic:
 
 
 class RecommendService:
-    """后端推荐服务接口类。"""
+    """后端推荐服务接口类。
+
+    这个类只负责参数归一化和路由分发，不直接承载评分逻辑。
+    """
 
     @staticmethod
     def recommend_2to1_linkage(
@@ -705,6 +734,7 @@ class RecommendService:
         secondary_neg_list: list = None,
         limit: int = 5,
     ):
+        """把前端传入的两组偏好列表分发到对应的推荐实现。"""
         primary_pos_list = primary_pos_list or []
         primary_neg_list = primary_neg_list or []
         secondary_pos_list = secondary_pos_list or []
