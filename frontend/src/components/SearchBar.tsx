@@ -4,7 +4,6 @@ import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/da
 import { getGraphByPanel } from '../services/homeService'
 import { searchNodes, clearFilters, addFilter, removeFilter, recommend2To1 } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
-import { usePathStore } from '../store/pathStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
 
@@ -35,7 +34,10 @@ export function SearchBar() {
   const bumpFilterRefreshKey = useGraphStore((state) => state.bumpFilterRefreshKey)
   const likedNodes = useGraphStore((state) => state.likedNodes)
   const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
+  const clearPreferences = useGraphStore((state) => state.clearPreferences)
+  const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const setRecommendChains = useGraphStore((state) => state.setRecommendChains)
+  const setIsRecommendWindowOpen = useGraphStore((state) => state.setIsRecommendWindowOpen)
 
   const [isSearching, setIsSearching] = useState(false)
   const [isRecommending, setIsRecommending] = useState(false)
@@ -53,9 +55,13 @@ export function SearchBar() {
     return areas
   }, [likedNodes, dislikedNodes])
 
-  const canActivateRecommend = likedNodes.length > 0 && preferenceAreas.size >= 2
+  const canActivateRecommend = likedNodes.length > 0
+  const hasPreferences = likedNodes.length > 0 || dislikedNodes.length > 0
 
-  const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
+  async function handleClearPreferences() {
+    clearPreferences()
+    await syncPreferenceState()
+  }
 
   const activeNodeFilters = [
     ...backendFilterState.node_filters,
@@ -182,28 +188,39 @@ export function SearchBar() {
 
     let type: 'skill_to_role' | 'role_to_company' | 'company_to_role'
     let primaryArea: GraphPanelId
-    let secondaryArea: GraphPanelId
+    let secondaryArea: GraphPanelId | null
 
+    // Align with backend TYPE_CONFIG primary/secondary expectations:
+    // - skill_to_role: primary=skill, secondary=company
+    // - role_to_company: primary=skill, secondary=role (job)
+    // - company_to_role: primary=role (job), secondary=company
     if (hasSkill && hasCompany) {
-      type = 'skill_to_role'
-      primaryArea = 'skill'
-      secondaryArea = 'company'
+      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = 'company'
     } else if (hasSkill && hasJob) {
-      type = 'role_to_company'
-      primaryArea = 'job'
-      secondaryArea = 'skill'
+      type = 'role_to_company'; primaryArea = 'skill'; secondaryArea = 'job'
+    } else if (hasJob && hasCompany) {
+      type = 'company_to_role'; primaryArea = 'job'; secondaryArea = 'company'
+    } else if (hasSkill) {
+      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = null
+    } else if (hasJob) {
+      // only job selected -> treat as primary role for company lookup
+      type = 'company_to_role'; primaryArea = 'job'; secondaryArea = null
     } else {
-      type = 'company_to_role'
-      primaryArea = 'company'
-      secondaryArea = 'job'
+      // only company selected -> use company as secondary for skill->role search
+      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = 'company'
     }
 
     const primaryPos = likedNodes.filter((n) => n.graphArea === primaryArea).map((n) => n.id)
     const primaryNeg = dislikedNodes.filter((n) => n.graphArea === primaryArea).map((n) => n.id)
-    const secondaryPos = likedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
-    const secondaryNeg = dislikedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
+    const secondaryPos = secondaryArea
+      ? likedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
+      : []
+    const secondaryNeg = secondaryArea
+      ? dislikedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
+      : []
 
     setIsRecommending(true)
+    setIsRecommendWindowOpen(true)
     try {
       const result = await recommend2To1({
         type,
@@ -212,8 +229,12 @@ export function SearchBar() {
         secondary_pos_list: secondaryPos,
         secondary_neg_list: secondaryNeg,
       })
+      // Debug: log API result to help trace missing-chains issue
+      // eslint-disable-next-line no-console
+      console.debug('[Recommend] API result', result)
       setRecommendChains(result.chains ?? [])
-      setPathPanelOpen(true)
+    } catch (err) {
+      console.error('[Recommend] API error:', err)
     } finally {
       setIsRecommending(false)
     }
@@ -271,6 +292,17 @@ export function SearchBar() {
           >
             {isRecommending ? '…' : '->'}
           </button>
+
+          {hasPreferences ? (
+            <button
+              type="button"
+              onClick={() => void handleClearPreferences()}
+              title="清除所有节点偏好，恢复到 neutral 状态"
+              className="h-11 rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-600 transition hover:bg-rose-100 md:w-auto"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
 
         {showMissingToast ? (
@@ -410,24 +442,4 @@ function buildHighlightMap(results: SelectedGraphNode[]) {
   }
 }
 
-function buildHiddenMap(results: SelectedGraphNode[]) {
-  return (['skill', 'job', 'company'] as const).reduce(
-    (acc, area) => {
-      const visible = new Set(
-        results.filter((item) => item.graphArea === area).map((item) => item.id),
-      )
-
-      acc[area] = getGraphByPanel(area).nodes
-        .map((node) => node.data.id)
-        .filter((id) => visible.size > 0 && !visible.has(id))
-
-      return acc
-    },
-    {
-      skill: [] as string[],
-      job: [] as string[],
-      company: [] as string[],
-    },
-  )
-}
 

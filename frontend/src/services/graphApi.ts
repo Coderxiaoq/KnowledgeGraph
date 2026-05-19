@@ -32,7 +32,7 @@ function normalizeApiBaseUrl(rawBaseUrl: string | undefined) {
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_GRAPH_API_BASE_URL)
 
-const REQUEST_TIMEOUT = 10000
+const REQUEST_TIMEOUT = 60000
 const searchTimers = new Map<string, number>()
 
 export class GraphApiError extends Error {
@@ -226,17 +226,23 @@ export async function getNodesByCategory(
 export async function recommend2To1(
   params: RecommendPreferencePayload,
 ): Promise<RecommendResponse> {
+  const payload = {
+    type: params.type,
+    primary_pos_list: params.primary_pos_list,
+    primary_neg_list: params.primary_neg_list,
+    secondary_pos_list: params.secondary_pos_list,
+    secondary_neg_list: params.secondary_neg_list,
+    limit: params.limit,
+  }
+
+  // Debug: log outbound payload
+  // eslint-disable-next-line no-console
+  console.debug('[Recommend] POST payload', payload)
+
   const response = await unwrapData<Record<string, unknown>>({
     method: 'POST',
     url: '/recommend/2to1',
-    data: {
-      type: params.type,
-      primary_pos_list: params.primary_pos_list,
-      primary_neg_list: params.primary_neg_list,
-      secondary_pos_list: params.secondary_pos_list,
-      secondary_neg_list: params.secondary_neg_list,
-      limit: params.limit,
-    },
+    data: payload,
     ...withOptionalSignal(params.signal),
   })
 

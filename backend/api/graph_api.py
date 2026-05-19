@@ -9,6 +9,9 @@ from models.graph import (
 )
 from service.graph_service import GraphService
 from service.algo_service import RecommendService
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -171,6 +174,22 @@ async def get_2to1_recommendation(
         secondary_pos_list=payload.secondary_pos_list,
         secondary_neg_list=payload.secondary_neg_list,
         limit=payload.limit,
+    )
+    # 简单日志，便于定位前端传入的偏好与后端返回结果数量
+    try:
+        chain_count = len(data.get('chains', [])) if isinstance(data, dict) else 0
+    except Exception:
+        chain_count = 0
+
+    # Log actual lists for debugging mismatch between front-end and back-end
+    logger.info(
+        "[Recommend] type=%s primary_pos_list=%s primary_neg_list=%s secondary_pos_list=%s secondary_neg_list=%s -> chains=%d",
+        payload.type,
+        str(payload.primary_pos_list or []),
+        str(payload.primary_neg_list or []),
+        str(payload.secondary_pos_list or []),
+        str(payload.secondary_neg_list or []),
+        chain_count,
     )
 
     return GraphDataResponse(data=data)

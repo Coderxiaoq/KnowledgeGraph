@@ -132,6 +132,8 @@ export type ChainEdge = {
 export type SingleChain = {
   score: number
   base_score?: number
+  derivative?: number
+  is_gradient?: boolean
   reason?: string
   nodes: { company: ChainNode; role: ChainNode; skill: ChainNode }
   edges: ChainEdge[]
@@ -148,6 +150,7 @@ export type ComboChain = {
   member_chains?: SingleChain[]
   matched_positive_ids?: string[]
   matched_negative_ids?: string[]
+  group_key?: { left_id: string; right_id: string }
 }
 
 export type RecommendResponse = {

@@ -299,11 +299,14 @@ class CareerLinkageLogic:
         if matched_negative:
             reason_parts.append(f"neg={','.join(matched_negative)}")
 
+        base_score = edge_company_role * edge_role_skill
+        max_possible = base_score * (cls.PREFERENCE_WEIGHT ** 2)
         return {
             "score": total_score,
-            "base_score": edge_company_role * edge_role_skill,
+            "base_score": base_score,
             "preference_score": (primary_multiplier * secondary_multiplier),
             "pair_bonus": 0.0,
+            "derivative": max_possible - total_score,
             "matched_positive_ids": matched_positive,
             "matched_negative_ids": matched_negative,
             "reason": " | ".join(reason_parts),
@@ -319,23 +322,38 @@ class CareerLinkageLogic:
         }
 
     @classmethod
-    def _combo_group_key(cls, recommend_type: str, chain: Dict[str, Any]) -> tuple[str, str]:
-        """根据推荐类型决定组合链的分组锚点。"""
+    def _pick_top_and_gradient(cls, chains: list, top: int = 7, gradient: int = 3) -> list:
+        """取分数前 top 条（is_gradient=False）+ 导数最高的 gradient 条（is_gradient=True）。
+
+        导数 = base_score * PREFERENCE_WEIGHT^2 - score，即将所有 negative/neutral 偏好
+        改为 positive 后的分数增益，值越大说明该链"待挖掘潜力"越高。
+        """
+        n = len(chains)
+        if n == 0:
+            return []
+
+        effective_top = min(top, n)
+        top_chains = [{**c, "is_gradient": False} for c in chains[:effective_top]]
+
+        remaining = chains[effective_top:]
+        if not remaining or gradient == 0:
+            return top_chains
+
+        gradient_sorted = sorted(remaining, key=lambda c: c.get("derivative", 0.0), reverse=True)
+        gradient_chains = [{**c, "is_gradient": True} for c in gradient_sorted[:gradient]]
+
+        return top_chains + gradient_chains
+
+    @classmethod
+    def _combo_group_key(cls, chain: Dict[str, Any]) -> tuple[str, str]:
+        """组合链始终以 (role_id, company_id) 为分组锚点，与推荐类型无关。"""
         nodes = chain["nodes"]
-
-        if recommend_type == "skill_to_role":
-            return nodes["role"]["id"], nodes["company"]["id"]
-
-        if recommend_type == "role_to_company":
-            return nodes["company"]["id"], nodes["skill"]["id"]
-
-        return nodes["role"]["id"], nodes["skill"]["id"]
+        return nodes["role"]["id"], nodes["company"]["id"]
 
     @classmethod
     def _aggregate_combo_chains(
         cls,
         session,
-        recommend_type: str,
         chains: list[Dict[str, Any]],
         type_config: Dict[str, Any],
         preference_sets: Dict[str, set[str]],
@@ -345,7 +363,7 @@ class CareerLinkageLogic:
         grouped: Dict[tuple[str, str], Dict[str, Any]] = {}
 
         for chain in chains:
-            group_key = cls._combo_group_key(recommend_type, chain)
+            group_key = cls._combo_group_key(chain)
             group = grouped.setdefault(
                 group_key,
                 {
@@ -398,7 +416,6 @@ class CareerLinkageLogic:
 
             expanded = cls._expand_combo_group(
                 session,
-                recommend_type=recommend_type,
                 left_id=left_id,
                 right_id=right_id,
                 preference_sets=preference_sets,
@@ -424,6 +441,7 @@ class CareerLinkageLogic:
                     "reason": f"avg_score={average_score:.2f} || " + " || ".join(group.get("reason_parts", [])),
                     "nodes": list(group["nodes"].values()),
                     "edges": group["edges"],
+                    "_members": group.get("members", []),
                 }
             )
 
@@ -434,39 +452,19 @@ class CareerLinkageLogic:
     def _expand_combo_group(
         cls,
         session,
-        recommend_type: str,
         left_id: str,
         right_id: str,
         preference_sets: Dict[str, set[str]],
         type_config: Dict[str, Any],
     ) -> Dict[str, Any] | None:
-        """按组合键重新拉取该组下的所有单链条。
-
-        - skill_to_role: 以 role + company 为组，展开组内全部 skill
-        - role_to_company: 以 company + skill 为组，展开组内全部 role
-        - company_to_role: 以 role + skill 为组，展开组内全部 company
+        """按 (role_id, company_id) 拉取该组下所有 skill 单链条并评分。"""
+        # left_id = role_id, right_id = company_id（三种推荐类型统一）
+        query = """
+        MATCH (company:Company {company_id: $right_id})-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
+        MATCH (role)-[requirement:REQUIRES]->(skill:Skill)
+        RETURN company, recruit, role, requirement, skill
         """
-        if recommend_type == "skill_to_role":
-            query = """
-            MATCH (company:Company {company_id: $right_id})-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
-            MATCH (role)-[requirement:REQUIRES]->(skill:Skill)
-            RETURN company, recruit, role, requirement, skill
-            """
-            result = session.run(query, left_id=left_id, right_id=right_id)
-        elif recommend_type == "role_to_company":
-            query = """
-            MATCH (company:Company {company_id: $left_id})-[recruit:RECRUITS]->(role:Role)
-            MATCH (role)-[requirement:REQUIRES]->(skill:Skill {skill_id: $right_id})
-            RETURN company, recruit, role, requirement, skill
-            """
-            result = session.run(query, left_id=left_id, right_id=right_id)
-        else:
-            query = """
-            MATCH (company:Company)-[recruit:RECRUITS]->(role:Role {role_id: $left_id})
-            MATCH (role)-[requirement:REQUIRES]->(skill:Skill {skill_id: $right_id})
-            RETURN company, recruit, role, requirement, skill
-            """
-            result = session.run(query, left_id=left_id, right_id=right_id)
+        result = session.run(query, left_id=left_id, right_id=right_id)
 
         members: list[Dict[str, Any]] = []
         seen_member_keys: set[tuple[str | None, str | None, str | None]] = set()
@@ -535,6 +533,7 @@ class CareerLinkageLogic:
 
             reason_parts.append(item["reason"])
 
+        members.sort(key=lambda x: x["score"], reverse=True)
         return {
             "score": total_score,
             "base_score": sum(item["base_score"] for item in members),
@@ -549,6 +548,7 @@ class CareerLinkageLogic:
             "member_count": member_count,
             "reason_parts": reason_parts,
             "edge_seen": edge_seen,
+            "members": members,
         }
 
     @classmethod
@@ -560,7 +560,7 @@ class CareerLinkageLogic:
         primary_neg_list: Iterable[str] | None,
         secondary_pos_list: Iterable[str] | None,
         secondary_neg_list: Iterable[str] | None,
-        limit: int = 5,
+        limit: int = 3,
     ) -> Dict[str, Any]:
         """统一推荐入口：查单链、算分、聚合、裁剪预览。"""
         type_config = cls.TYPE_CONFIG[recommend_type]
@@ -625,36 +625,36 @@ class CareerLinkageLogic:
         # 聚合成组合链之后，再做一层摘要裁剪，避免 docs 响应过大。
         combo_chains = cls._aggregate_combo_chains(
             session,
-            recommend_type,
             ranked_chains,
             type_config,
             preference_sets,
             limit,
         )
 
-        # 单链条候选可能很多，docs 里完整返回会非常重；这里只保留一小段预览。
-        single_chain_preview_limit = min(len(ranked_chains), max(limit * 3, 10))
-
-        # 将 ranked_chains 按 combo 组键分桶，注入到对应 combo_chain 的 member_chains 字段
+        # 后备桶：_expand_combo_group 返回 None 时用初始过滤结果兜底
         single_by_group: Dict[tuple, list] = {}
         for chain in ranked_chains:
-            key = cls._combo_group_key(recommend_type, chain)
+            key = cls._combo_group_key(chain)
             single_by_group.setdefault(key, []).append({
                 "score": chain["score"],
                 "base_score": chain["base_score"],
-                "nodes": chain["nodes"],  # dict: {company/role/skill: node_dict}
+                "nodes": chain["nodes"],
                 "edges": chain["edges"],
                 "reason": chain["reason"],
             })
 
         for combo in combo_chains:
-            left = combo["group_key"]["left_id"]
-            right = combo["group_key"]["right_id"]
-            combo["member_chains"] = single_by_group.get((left, right), [])
+            # 优先使用 _expand_combo_group 拉到的完整 members（已按分排序）
+            raw = combo.pop("_members", None)
+            if not raw:
+                left = combo["group_key"]["left_id"]
+                right = combo["group_key"]["right_id"]
+                raw = single_by_group.get((left, right), [])
+            combo["member_chains"] = cls._pick_top_and_gradient(raw)
 
         return {
             "chains": combo_chains,
-            "single_chains": ranked_chains[:single_chain_preview_limit],
+            "single_chains": cls._pick_top_and_gradient(ranked_chains),
         }
 
     @classmethod
@@ -665,7 +665,7 @@ class CareerLinkageLogic:
         skill_neg_list: list,
         company_pos_list: list,
         company_neg_list: list,
-        limit: int = 5,
+        limit: int = 3,
     ):
         return cls._recommend_chains(
             session,
@@ -685,7 +685,7 @@ class CareerLinkageLogic:
         skill_neg_list: list,
         role_pos_list: list,
         role_neg_list: list,
-        limit: int = 5,
+        limit: int = 3,
     ):
         return cls._recommend_chains(
             session,
@@ -705,7 +705,7 @@ class CareerLinkageLogic:
         role_neg_list: list,
         company_pos_list: list,
         company_neg_list: list,
-        limit: int = 5,
+        limit: int = 3,
     ):
         return cls._recommend_chains(
             session,
@@ -732,7 +732,7 @@ class RecommendService:
         primary_neg_list: list = None,
         secondary_pos_list: list = None,
         secondary_neg_list: list = None,
-        limit: int = 5,
+        limit: int = 3,
     ):
         """把前端传入的两组偏好列表分发到对应的推荐实现。"""
         primary_pos_list = primary_pos_list or []

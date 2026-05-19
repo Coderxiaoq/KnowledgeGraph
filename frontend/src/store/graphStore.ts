@@ -53,6 +53,7 @@ export type GraphStoreState = {
   currentPath: GraphPath | null
   currentExpandGraph: GraphResponse | null
   recommendChains: ComboChain[]
+  isRecommendWindowOpen: boolean
 }
 
 export type GraphStoreActions = {
@@ -101,6 +102,7 @@ export type GraphStoreActions = {
   removeRecommendedNode: (nodeId: string) => void
   updateCurrentPath: (path: GraphPath | null) => void
   setRecommendChains: (chains: ComboChain[]) => void
+  setIsRecommendWindowOpen: (open: boolean) => void
   clearSelection: () => void
   clearPreferences: () => void
   resetGraphState: () => void
@@ -166,6 +168,7 @@ const initialGraphState: GraphStoreState = {
   currentPath: null,
   currentExpandGraph: null,
   recommendChains: [],
+  isRecommendWindowOpen: false,
 }
 
 function isSameNode(left: SelectedGraphNode, right: SelectedGraphNode) {
@@ -547,6 +550,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
 
   updateCurrentPath: (path) => set({ currentPath: path }),
   setRecommendChains: (chains) => set({ recommendChains: chains }),
+  setIsRecommendWindowOpen: (open) => set({ isRecommendWindowOpen: open }),
 
   clearSelection: () =>
     set({

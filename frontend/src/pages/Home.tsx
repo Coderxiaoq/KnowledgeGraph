@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 import { PathBar } from '../components/PathBar'
+import { RecommendWindow } from '../components/RecommendWindow'
 import { SearchBar } from '../components/SearchBar'
 import { GraphPanel } from '../components/graph/GraphPanel'
 import { AppShell } from '../components/layout/AppShell'
@@ -191,6 +192,7 @@ export function Home() {
         </section>
       </main>
       <PathBar />
+      <RecommendWindow />
     </AppShell>
   )
 }
