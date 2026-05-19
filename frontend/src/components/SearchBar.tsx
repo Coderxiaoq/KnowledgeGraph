@@ -8,7 +8,7 @@ import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
 
 const FIELD_OPTIONS: { label: string; field: string; op: FilterOperator; placeholder: string; defaultMode: FilterMode; target: 'node' | 'edge' }[] = [
-  { label: '薪资', field: 'salary', op: 'salary_in', placeholder: '预期薪资，如50000', defaultMode: 'positive', target: 'edge' },
+  { label: '薪资', field: 'avg_salary', op: 'salary_in', placeholder: '期望薪资，如20000', defaultMode: 'positive', target: 'node' },
   { label: '城市/地点', field: 'location', op: 'contains', placeholder: '如 北京', defaultMode: 'negative', target: 'node' },
   { label: '节点名称', field: 'name', op: 'contains', placeholder: '关键词', defaultMode: 'negative', target: 'node' },
 ]
