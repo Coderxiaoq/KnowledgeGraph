@@ -78,6 +78,8 @@ export const GraphPreview = memo(function GraphPreview({
   const backendFilterState = useGraphStore((state) => state.backendFilterState)
   const filterRefreshKey = useGraphStore((state) => state.filterRefreshKey)
   const graphReloadKey = useGraphStore((state) => state.graphReloadKey)
+  const searchKeyword = useGraphStore((state) => state.searchKeyword)
+  const searchResults = useGraphStore((state) => state.searchResults)
   const [graphData, setGraphData] = useState<GraphData>(() => getGraphByPanel(panelId))
   const [loading, setLoading] = useState(graphData.nodes.length === 0)
   const [error, setError] = useState<string | null>(null)
@@ -156,6 +158,29 @@ export const GraphPreview = memo(function GraphPreview({
     ? dislikedNodes.some((node) => node.id === activeSelectedNode.id)
     : false
   const hasPreferences = likedNodes.length > 0 || dislikedNodes.length > 0
+  const isFilterActive = backendFilterState.node_filters.length > 0
+  const hasActiveFilteredSearch =
+    isFilterActive &&
+    searchKeyword.trim().length > 0 &&
+    searchResults.length > 0 &&
+    highlightedNodes[panelId].length > 0
+
+  const effectiveHighlightedNodeIds = hasActiveFilteredSearch
+    ? highlightedNodes[panelId]
+    : isFilterActive
+      ? filterMatchedNodes[panelId]
+      : highlightedNodes[panelId]
+
+  const effectiveHiddenNodeIds = useMemo(() => {
+    if (!hasActiveFilteredSearch) {
+      return hiddenNodes[panelId]
+    }
+
+    const highlightedSet = new Set(highlightedNodes[panelId])
+    return graphData.nodes
+      .map((node) => node.data.id)
+      .filter((nodeId) => !highlightedSet.has(nodeId))
+  }, [graphData.nodes, hasActiveFilteredSearch, hiddenNodes, highlightedNodes, panelId])
 
   useEffect(() => {
     void syncPreferenceState({
@@ -306,6 +331,17 @@ export const GraphPreview = memo(function GraphPreview({
       })
       .map((edge) => edge.data.id)
   }, [graphData.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
+
+  const effectiveVisibleEdgeIds = useMemo(() => {
+    if (!hasActiveFilteredSearch) {
+      return visibleEdgeIds
+    }
+
+    const highlightedSet = new Set(highlightedNodes[panelId])
+    return graphData.edges
+      .filter((edge) => highlightedSet.has(edge.data.source) && highlightedSet.has(edge.data.target))
+      .map((edge) => edge.data.id)
+  }, [graphData.edges, hasActiveFilteredSearch, highlightedNodes, panelId, visibleEdgeIds])
 
   const syncPanelsFromExpand = useCallback(
     (expandedGraph: GraphResponse, sessionId: number) => {
@@ -558,13 +594,9 @@ export const GraphPreview = memo(function GraphPreview({
       <KnowledgeGraph
         data={graphData}
         activeNodeId={activeVisualNodeId}
-        highlightedNodeIds={
-          backendFilterState.node_filters.length > 0
-            ? filterMatchedNodes[panelId]
-            : highlightedNodes[panelId]
-        }
-        hiddenNodeIds={hiddenNodes[panelId]}
-        visibleEdgeIds={visibleEdgeIds}
+        highlightedNodeIds={effectiveHighlightedNodeIds}
+        hiddenNodeIds={effectiveHiddenNodeIds}
+        visibleEdgeIds={effectiveVisibleEdgeIds}
         bridgeEdges={isPathPanelOpen ? activeBridgeEdges[panelId] : []}
         hoveredNodeId={hoveredNode?.graphArea === panelId ? hoveredNode.id : null}
         likedNodeIds={likedNodes.map((node) => node.id)}
