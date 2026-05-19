@@ -9,10 +9,10 @@ export type SkillInfo = {
 export type CompanyInfo = {
   company_id: string
   name: string
-  industry?: string
   salary_range?: string
   urgency?: string
   location?: string
+  scale?: string
 }
 
 export type RoleInfo = {

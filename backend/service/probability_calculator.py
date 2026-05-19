@@ -1,6 +1,6 @@
 # coding:utf-8
 # backend/service/probability_calculator.py
-
+import math
 
 class ProbabilityCalculator:
     """
@@ -19,10 +19,23 @@ class ProbabilityCalculator:
         计算应聘成功概率
         
         评分维度：
-        1. 技能匹配度 (40%)
-        2. 核心技能覆盖 (30%)
-        3. 公司紧急度 (20%)
-        4. 市场竞争度 (10%)
+        1. 技能匹配度
+        2. 核心技能覆盖
+        3. 公司紧急度
+        4. 市场竞争度
+
+        权重系数与敏感系数：
+        1.核心技能惩罚指数。
+        2.紧急度加成系数
+        3.竞争度减损系数
+        4.Sigmoid斜率
+        5.录用门槛线
+
+        核心公式
+        个体实力得分 = 核心技能覆盖 ** 核心技能惩罚指数 * 技能匹配度
+        环境修正因子 = (1 + 紧急度加成系数 * 公司紧急度) / (1 + 竞争度减损系数 * 市场竞争度)
+        最终得分 = 个体实力得分 * 环境修正因子
+        probability = 1 / (1 + math.exp(-Sigmoid斜率 * (最终得分 - 录用门槛线)))
         
         Args:
             session: Neo4j会话
@@ -67,12 +80,16 @@ class ProbabilityCalculator:
             "market_competition": round(market_factor, 2)
         }
         
-        probability = (
-            skill_match * 0.4 +
-            core_coverage * 0.3 +
-            company_urgency * 0.2 +
-            market_factor * 0.1
-        )
+        ALPHA = 2.5    # 核心技能惩罚指数
+        BETA = 0.5     # 紧急度加成系数
+        GAMMA = 2.0    # 竞争度减损系数
+        K_SLOPE = 10   # Sigmoid斜率
+        THRES = 0.5    # 录用门槛线
+
+        individual_score = core_coverage ** ALPHA * skill_match
+        modifier = (1 + BETA * company_urgency) / (1 + GAMMA * market_factor)
+        final_score = individual_score * modifier
+        probability = 1 / (1 + math.exp(-K_SLOPE * (final_score - THRES)))
         
         suggestions = ProbabilityCalculator._generate_suggestions(
             skill_analysis,
@@ -168,13 +185,13 @@ class ProbabilityCalculator:
         company_count = record["company_count"]
         
         if company_count >= 10:
-            return 0.9
-        elif company_count >= 5:
-            return 0.7
-        elif company_count >= 2:
-            return 0.5
-        else:
             return 0.3
+        elif company_count >= 5:
+            return 0.5
+        elif company_count >= 2:
+            return 0.7
+        else:
+            return 0.9
     
     @staticmethod
     def _generate_suggestions(

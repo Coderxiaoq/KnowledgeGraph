@@ -129,7 +129,7 @@ class StandardGraphImporter:
 if __name__ == "__main__":
     URI = "bolt://localhost:7687"
     USER = "neo4j"
-    PASSWORD = "iris5678"
+    PASSWORD = "password"
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(script_dir, "../data/knowledge_graph_final.json")

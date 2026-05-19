@@ -80,10 +80,10 @@ class SkillMatcher:
              collect(DISTINCT {
                  company_id: c.company_id,
                  name: c.name,
-                 industry: c.industry,
-                 salary_range: c.salary_range,
+                 salary_range: rec.salary,
                  urgency: coalesce(rec.urgency, '普通'),
-                 location: c.location
+                 location: c.location,
+                 scale: c.scale
              }) as companies
         
         OPTIONAL MATCH (r)-[core_req:REQUIRES]->(core_s:Skill)
@@ -105,7 +105,7 @@ class SkillMatcher:
             r.role_id as role_id,
             r.name as role_name,
             r.description as description,
-            r.salary_range as salary_range,
+            r.avg_salary as salary_range,
             matched_skills,
             [s IN all_skills WHERE NOT s.skill_id IN $skill_ids] as missing_skills,
             matched_count,
@@ -177,13 +177,15 @@ class SkillMatcher:
         if not numbers:
             return True
         
-        avg_salary = sum(int(n) for n in numbers) / len(numbers) * 1000
+        salaries = [int(n) for n in numbers]
+        role_min = min(salaries)
+        role_max = max(salaries)
         
-        if salary_min and avg_salary < salary_min:
+        if salary_min and role_max < salary_min:
             return False
-        if salary_max and avg_salary > salary_max:
+        if salary_max and role_min > salary_max:
             return False
-        
+            
         return True
     
     @staticmethod
@@ -207,7 +209,7 @@ class SkillMatcher:
     @staticmethod
     def get_skill_based_roles(session, skill_ids: list, limit: int = 20) -> dict:
         """
-        简化版：仅根据技能获取相关职业（用于快速推荐）
+        仅根据技能获取相关职业（用于快速推荐）
         """
         if not skill_ids:
             return {"roles": []}

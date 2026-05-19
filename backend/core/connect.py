@@ -12,7 +12,7 @@ class Neo4jDatabase:
         """建立数据库驱动连接池"""
         uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
         user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD", "iris5678")
+        password = os.getenv("NEO4J_PASSWORD", "password")
         
         try:
             self._driver = GraphDatabase.driver(uri, auth=(user, password))

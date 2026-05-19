@@ -1,6 +1,6 @@
 # 项目修改说明文档
 
-## 📋 修改概览
+## 修改概览
 
 本次修改为知识图谱项目新增了**智能职业推荐系统**，包含3个核心算法、6个API接口、2个可视化组件和1个完整的推荐页面。
 
@@ -58,10 +58,22 @@
 - `batch_calculate_probability()` - 批量计算概率
 
 **多维度评分体系：**
-- 技能匹配度：权重 40%
-- 核心技能覆盖：权重 30%
+- 技能匹配度
+- 核心技能覆盖：权重 
 - 公司紧急度：权重 20%
 - 市场竞争度：权重 10%
+
+- 核心技能惩罚指数。
+- 紧急度加成系数
+- 竞争度减损系数
+- Sigmoid斜率
+- 录用门槛线
+
+- 核心公式
+- 个体实力得分 = 核心技能覆盖 ** 核心技能惩罚指数 * 技能匹配度
+- 环境修正因子 = (1 + 紧急度加成系数 * 公司紧急度) / (1 + 竞争度减损系数 * 市场竞争度)
+- 最终得分 = 个体实力得分 * 环境修正因子
+- probability = 1 / (1 + math.exp(-Sigmoid斜率 * (最终得分 - 录用门槛线)))
 
 **作用：** 综合多维度评估应聘成功概率，提供改进建议。
 
@@ -322,254 +334,8 @@ export default function App() {
 
 **作用：** 添加路由依赖包。
 
----
-
-## 三、核心算法详解
-
-### 3.1 职业推荐算法
-
-**输入：**
-- 用户掌握的技能列表
-- 期望薪资范围（可选）
-
-**计算流程：**
-```
-1. 遍历所有职业
-2. 对每个职业：
-   - 计算匹配技能数
-   - 计算总需求数
-   - 技能匹配率 = 匹配数 / 总数
-   - 核心技能覆盖率 = 匹配核心技能数 / 总核心技能数
-   - 匹配评分 = 技能匹配率 × 0.6 + 核心覆盖率 × 0.4
-   - 计算应聘概率
-   - 检查薪资符合度
-3. 按匹配评分排序
-4. 返回Top N结果
-```
-
-**输出：**
-- 推荐职业列表
-- 每个职业的匹配详情
-- 应聘成功概率
-
----
-
-### 3.2 应聘概率算法
-
-**计算公式：**
-```
-概率 = 技能匹配 × 0.4 
-     + 核心技能覆盖 × 0.3 
-     + 公司紧急度 × 0.2 
-     + 市场竞争度 × 0.1
-```
-
-**各维度说明：**
-
-| 维度 | 权重 | 计算方式 |
-|------|------|---------|
-| 技能匹配 | 40% | 匹配技能数 / 总需求数 |
-| 核心技能覆盖 | 30% | 匹配核心技能数 / 总核心技能数 |
-| 公司紧急度 | 20% | 极高=1.0, 高=0.8, 中=0.6, 普通=0.4 |
-| 市场竞争度 | 10% | 根据招聘公司数量动态计算 |
-
----
-
-## 四、数据流说明
-
-### 4.1 完整数据流
-
-```
-用户操作（选择技能）
-    ↓
-前端调用 recommendCareer()
-    ↓
-POST /api/recommend/career
-    ↓
-后端 SkillMatcher.recommend_by_skills_and_salary()
-    ↓
-Neo4j Cypher查询
-    ↓
-数据格式化 & 清理
-    ↓
-返回推荐结果
-    ↓
-前端 RecommendCard 组件渲染
-    ↓
-用户点击查看详情
-    ↓
-前端调用 calculateApplyProbability()
-    ↓
-POST /api/recommend/probability/apply
-    ↓
-后端 ProbabilityCalculator.calculate_apply_probability()
-    ↓
-返回概率分析 & 建议
-    ↓
-前端 ProbabilityGauge 组件展示
-```
-
----
-
-### 4.2 Neo4j查询示例
-
-**职业推荐查询：**
-```cypher
-MATCH (r:Role)
-OPTIONAL MATCH (r)-[req:REQUIRES]->(s:Skill)
-WHERE s.skill_id IN $skill_ids
-WITH r, collect(DISTINCT s) as matched_skills
-OPTIONAL MATCH (r)-[req_all:REQUIRES]->(all_s:Skill)
-WITH r, matched_skills, collect(DISTINCT all_s) as all_skills
-WITH r, matched_skills, all_skills,
-     size(matched_skills) as matched_count,
-     size(all_skills) as total_count
-OPTIONAL MATCH (c:Company)-[rec:RECRUITS]->(r)
-WITH r, matched_skills, all_skills, matched_count, total_count,
-     collect(DISTINCT {
-         company_id: c.company_id,
-         name: c.name,
-         urgency: coalesce(rec.urgency, '普通')
-     }) as companies
-RETURN r, matched_skills, all_skills, companies, 
-       toFloat(matched_count) / total_count as match_rate
-ORDER BY match_rate DESC
-LIMIT $limit
-```
-
----
-
-## 五、修复的问题
-
-### 5.1 类型错误修复
-
-**问题：** GraphJson类型不能调用toLowerCase()
-
-**原因：** GraphJson是联合类型，包含number、boolean等非字符串类型
-
-**修复：**
-```typescript
-// 添加类型安全的辅助函数
-const getSkillName = (skill: GraphNode): string => {
-  const name = skill.properties?.name
-  if (typeof name === 'string') return name
-  if (typeof name === 'number') return String(name)
-  return skill.id
-}
-```
-
----
-
-### 5.2 序列化错误修复
-
-**问题：** Neo4j DateTime对象无法JSON序列化
-
-**原因：** Neo4j返回的日期时间对象不是原生JavaScript类型
-
-**修复：**
-```python
-def _clean_dict(obj):
-    """清理字典中的DateTime等不可序列化对象"""
-    if isinstance(obj, dict):
-        return {k: _clean_dict(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_clean_dict(item) for item in obj]
-    elif hasattr(obj, 'iso_format'):
-        return obj.iso_format()
-    else:
-        return obj
-```
-
----
-
-### 5.3 API路径错误修复
-
-**问题：** 前端请求路径 `/api/recommend/recommend/career`（重复recommend）
-
-**原因：** baseURL已包含 `/api/recommend`，路径又写了 `/recommend/career`
-
-**修复：**
-```typescript
-// 修改前
-const response = await recommendApi.post('/recommend/career', request)
-
-// 修改后
-const response = await recommendApi.post('/career', request)
-```
-
----
-
-## 六、使用说明
-
-### 6.1 访问地址
-
-| 页面 | 地址 |
-|------|------|
-| 首页（图谱浏览） | http://localhost:5173/ |
-| 智能推荐 | http://localhost:5173/recommend |
-| API文档 | http://localhost:8000/docs |
-| Neo4j浏览器 | http://localhost:7474 |
-
----
-
-### 6.2 操作步骤
-
-1. 打开浏览器访问 http://localhost:5173
-2. 点击导航栏的"智能推荐"
-3. 在左侧选择技能（点击技能标签）
-4. （可选）填写期望薪资范围
-5. 点击"开始推荐"
-6. 查看右侧推荐结果
-7. 点击推荐卡片查看详细概率分析
-
----
-
-### 6.3 推荐结果说明
-
-**每个推荐包含：**
-- 匹配度评分（综合评分）
-- 技能匹配率
-- 核心技能覆盖率
-- 已掌握技能（绿色）
-- 需补充技能（红色）
-- 招聘公司列表
-- 应聘成功概率
-- 薪资符合度
-
-**概率分析包含：**
-- 多维度评分详情
-- 各维度权重说明
-- 改进建议列表
-
----
-
-## 七、技术亮点
-
-### 7.1 算法设计
-- 多维度加权评分
-- 核心技能优先策略
-- 市场竞争度动态计算
-- 智能建议生成
-
-### 7.2 前端设计
-- TypeScript类型安全
-- 组件化设计
-- 可视化仪表盘
-- 响应式布局
-- 交互式体验
-
-### 7.3 后端设计
-- FastAPI异步接口
-- Neo4j图查询优化
-- 数据序列化处理
-- RESTful API设计
-- 模块化架构
-
----
-
-## 八、文件清单
-
-### 新增文件（17个）
+## 三、文件概览
+### 新增文件（15个）
 
 **后端（4个）：**
 - backend/service/career_analyzer.py
@@ -577,7 +343,7 @@ const response = await recommendApi.post('/career', request)
 - backend/service/probability_calculator.py
 - backend/api/recommend_api.py
 
-**前端（13个）：**
+**前端（8个）：**
 - frontend/src/types/recommendApi.ts
 - frontend/src/services/recommendApi.ts
 - frontend/src/components/recommend/RecommendCard.tsx
@@ -592,56 +358,3 @@ const response = await recommendApi.post('/career', request)
 - backend/main.py
 - frontend/src/App.tsx
 - frontend/package.json
-
-### 删除文件（已清理）
-
-- backend/test_recommend.py（测试脚本）
-- test_api.py（测试脚本）
-- test.ps1（测试脚本）
-
----
-
-## 九、后续扩展建议
-
-### 9.1 算法优化
-- 添加用户行为数据（点击、投递）
-- 实现协同过滤推荐
-- 添加时间衰减因子
-- 优化薪资匹配算法
-
-### 9.2 功能扩展
-- 用户画像管理
-- 职业发展路径规划
-- 技能学习路线推荐
-- 实时职位监控
-
-### 9.3 性能优化
-- 添加Redis缓存
-- 实现异步任务队列
-- 优化Neo4j查询
-- 添加API限流
-
----
-
-## 十、总结
-
-本次修改为知识图谱项目新增了完整的智能职业推荐系统，包括：
-
-✅ 3个核心算法（职业分析、技能匹配、概率计算）  
-✅ 6个API接口（详情、推荐、概率等）  
-✅ 2个可视化组件（卡片、仪表盘）  
-✅ 1个完整页面（技能选择、结果展示）  
-✅ 完整的类型定义和错误处理  
-✅ 清理了所有测试代码  
-
-项目现在具备了完整的职业规划推荐能力，用户可以：
-- 基于技能获得职业推荐
-- 查看应聘成功概率
-- 了解技能差距
-- 获得改进建议
-
----
-
-**文档编写时间：** 2026-05-18  
-**修改文件总数：** 20个（新增17 + 修改3）  
-**代码行数估算：** 约1500行

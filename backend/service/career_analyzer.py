@@ -53,10 +53,10 @@ class CareerAnalyzer:
              collect({
                  company_id: c.company_id,
                  name: c.name,
-                 industry: c.industry,
-                 salary_range: c.salary_range,
+                 salary_range: rec.salary,
                  urgency: coalesce(rec.urgency, '普通'),
-                 location: c.location
+                 location: c.location,
+                 scale: c.scale
              }) as companies_raw
         
         WITH r, skills_raw, companies_raw,
@@ -67,7 +67,7 @@ class CareerAnalyzer:
             r.role_id as role_id,
             r.name as role_name,
             r.description as description,
-            r.salary_range as salary_range,
+            r.avg_salary as salary_range,
             valid_skills as required_skills,
             valid_companies as hiring_companies,
             size(valid_skills) as skill_count,

@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react'
 import { RecommendCard } from '../components/recommend/RecommendCard'
 import { ProbabilityGauge } from '../components/recommend/ProbabilityGauge'
 import { recommendCareer, calculateApplyProbability } from '../services/recommendApi'
-import { getNodesByCategory } from '../services/graphApi'
+import { getNodesByCategory, searchNodes } from '../services/graphApi'
 import type { CareerRecommendation } from '../types/recommendApi'
 import type { GraphNode } from '../types/graphApi'
 import './CareerRecommend.css'
 
 export function CareerRecommend() {
   const [allSkills, setAllSkills] = useState<GraphNode[]>([])
+  const [displaySkills, setDisplaySkills] = useState<GraphNode[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [salaryMin, setSalaryMin] = useState<number | undefined>(undefined)
   const [salaryMax, setSalaryMax] = useState<number | undefined>(undefined)
   const [recommendations, setRecommendations] = useState<CareerRecommendation[]>([])
   const [loading, setLoading] = useState(false)
   const [skillSearch, setSkillSearch] = useState('')
+  const [searching, setSearching] = useState(false)
   const [selectedRecommendation, setSelectedRecommendation] = useState<CareerRecommendation | null>(
     null,
   )
@@ -24,12 +26,35 @@ export function CareerRecommend() {
     loadSkills()
   }, [])
 
+  useEffect(() => {
+    if (skillSearch.trim()) {
+      searchSkills(skillSearch)
+    } else {
+      setDisplaySkills(allSkills.slice(0, 50))
+    }
+  }, [skillSearch, allSkills])
+
   const loadSkills = async () => {
     try {
-      const response = await getNodesByCategory('Skill', { limit: 100 })
+      const response = await getNodesByCategory('Skill', { limit: 200 })
       setAllSkills(response.nodes || [])
+      setDisplaySkills((response.nodes || []).slice(0, 50))
     } catch (error) {
       console.error('加载技能失败:', error)
+    }
+  }
+
+  const searchSkills = async (keyword: string) => {
+    if (!keyword.trim()) return
+    setSearching(true)
+    try {
+      const response = await searchNodes({ keyword })
+      const skills = (response.nodes || []).filter((n: GraphNode) => n.label === 'Skill')
+      setDisplaySkills(skills.slice(0, 30))
+    } catch (error) {
+      console.error('搜索技能失败:', error)
+    } finally {
+      setSearching(false)
     }
   }
 
@@ -81,14 +106,6 @@ export function CareerRecommend() {
     return skill.id
   }
 
-  const filteredSkills = allSkills.filter(
-    (skill) => {
-      const name = getSkillName(skill)
-      return name.toLowerCase().includes(skillSearch.toLowerCase()) ||
-             skill.id.toLowerCase().includes(skillSearch.toLowerCase())
-    },
-  )
-
   const toggleSkill = (skillId: string) => {
     setSelectedSkills((prev) =>
       prev.includes(skillId) ? prev.filter((id) => id !== skillId) : [...prev, skillId],
@@ -114,7 +131,7 @@ export function CareerRecommend() {
               className="skill-search-input"
             />
             <div className="skills-grid">
-              {filteredSkills.slice(0, 30).map((skill) => {
+              {displaySkills.map((skill) => {
                 const isSelected = selectedSkills.includes(skill.id)
                 return (
                   <button

@@ -136,11 +136,13 @@
 .salary-inputs {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
 }
 
 .salary-input-group {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -152,11 +154,12 @@
 }
 
 .salary-input {
-  flex: 1;
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
 .salary-input:focus {
@@ -167,13 +170,14 @@
 .unit {
   font-size: 13px;
   color: #8c8c8c;
-  margin-left: 4px;
+  white-space: nowrap;
 }
 
 .range-separator {
   font-size: 16px;
   color: #d9d9d9;
   margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .recommend-button {
