@@ -4,13 +4,22 @@ import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/da
 import { getGraphByPanel } from '../services/homeService'
 import { searchNodes, clearFilters, addFilter, removeFilter, recommend2To1 } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
+import { usePathStore } from '../store/pathStore'
+import { useAppStore } from '../store/useAppStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
 
-const FIELD_OPTIONS: { label: string; field: string; op: FilterOperator; placeholder: string; defaultMode: FilterMode; target: 'node' | 'edge' }[] = [
-  { label: '薪资', field: 'avg_salary', op: 'salary_in', placeholder: '期望薪资，如20000', defaultMode: 'positive', target: 'node' },
-  { label: '城市/地点', field: 'location', op: 'contains', placeholder: '如 北京', defaultMode: 'negative', target: 'node' },
-  { label: '节点名称', field: 'name', op: 'contains', placeholder: '关键词', defaultMode: 'negative', target: 'node' },
+const FIELD_OPTIONS: {
+  label: string
+  field: string
+  op: FilterOperator
+  placeholder: string
+  defaultMode: FilterMode
+  target: 'node' | 'edge'
+}[] = [
+  { label: 'Salary', field: 'avg_salary', op: 'salary_in', placeholder: 'Expected salary, e.g. 20000', defaultMode: 'positive', target: 'node' },
+  { label: 'Location', field: 'location', op: 'contains', placeholder: 'e.g. Beijing', defaultMode: 'negative', target: 'node' },
+  { label: 'Node Name', field: 'name', op: 'contains', placeholder: 'Keyword', defaultMode: 'negative', target: 'node' },
 ]
 
 export function SearchBar() {
@@ -38,6 +47,12 @@ export function SearchBar() {
   const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const setRecommendChains = useGraphStore((state) => state.setRecommendChains)
   const setIsRecommendWindowOpen = useGraphStore((state) => state.setIsRecommendWindowOpen)
+  const resetGraphState = useGraphStore((state) => state.resetGraphState)
+  const bumpGraphReloadKey = useGraphStore((state) => state.bumpGraphReloadKey)
+  const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
+  const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
+  const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
+  const clearNavigationRequest = usePathStore((state) => state.clearNavigationRequest)
 
   const [isSearching, setIsSearching] = useState(false)
   const [isRecommending, setIsRecommending] = useState(false)
@@ -47,6 +62,7 @@ export function SearchBar() {
   const [filterValue, setFilterValue] = useState('')
   const [filterMode, setFilterMode] = useState<FilterMode>(FIELD_OPTIONS[0].defaultMode)
   const [isApplying, setIsApplying] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
 
   const preferenceAreas = useMemo(() => {
     const areas = new Set<GraphPanelId>()
@@ -111,7 +127,6 @@ export function SearchBar() {
 
     try {
       const graph = await searchNodes({ keyword })
-
       const results = mapSearchResults(graph.nodes)
       const focusNode = results[0]
 
@@ -179,6 +194,33 @@ export function SearchBar() {
     }
   }
 
+  async function handleClearAll() {
+    setIsClearing(true)
+
+    try {
+      const clearedState = await clearFilters()
+
+      resetGraphState()
+      setBackendFilterState(clearedState)
+      setRecommendChains([])
+      setIsRecommendWindowOpen(false)
+      setFocusedPanel(null)
+      setPathPanelOpen(false)
+      clearNavigationRequest()
+      setActiveNodeId('skill', '')
+      setActiveNodeId('job', '')
+      setActiveNodeId('company', '')
+      setShowMissingToast(false)
+      setIsFilterOpen(false)
+      setSelectedField(FIELD_OPTIONS[0])
+      setFilterValue('')
+      setFilterMode(FIELD_OPTIONS[0].defaultMode)
+      bumpGraphReloadKey()
+    } finally {
+      setIsClearing(false)
+    }
+  }
+
   async function handleRecommendClick() {
     if (!canActivateRecommend) return
 
@@ -190,24 +232,30 @@ export function SearchBar() {
     let primaryArea: GraphPanelId
     let secondaryArea: GraphPanelId | null
 
-    // Align with backend TYPE_CONFIG primary/secondary expectations:
-    // - skill_to_role: primary=skill, secondary=company
-    // - role_to_company: primary=skill, secondary=role (job)
-    // - company_to_role: primary=role (job), secondary=company
     if (hasSkill && hasCompany) {
-      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = 'company'
+      type = 'skill_to_role'
+      primaryArea = 'skill'
+      secondaryArea = 'company'
     } else if (hasSkill && hasJob) {
-      type = 'role_to_company'; primaryArea = 'skill'; secondaryArea = 'job'
+      type = 'role_to_company'
+      primaryArea = 'skill'
+      secondaryArea = 'job'
     } else if (hasJob && hasCompany) {
-      type = 'company_to_role'; primaryArea = 'job'; secondaryArea = 'company'
+      type = 'company_to_role'
+      primaryArea = 'job'
+      secondaryArea = 'company'
     } else if (hasSkill) {
-      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = null
+      type = 'skill_to_role'
+      primaryArea = 'skill'
+      secondaryArea = null
     } else if (hasJob) {
-      // only job selected -> treat as primary role for company lookup
-      type = 'company_to_role'; primaryArea = 'job'; secondaryArea = null
+      type = 'company_to_role'
+      primaryArea = 'job'
+      secondaryArea = null
     } else {
-      // only company selected -> use company as secondary for skill->role search
-      type = 'skill_to_role'; primaryArea = 'skill'; secondaryArea = 'company'
+      type = 'skill_to_role'
+      primaryArea = 'skill'
+      secondaryArea = 'company'
     }
 
     const primaryPos = likedNodes.filter((n) => n.graphArea === primaryArea).map((n) => n.id)
@@ -229,8 +277,6 @@ export function SearchBar() {
         secondary_pos_list: secondaryPos,
         secondary_neg_list: secondaryNeg,
       })
-      // Debug: log API result to help trace missing-chains issue
-      // eslint-disable-next-line no-console
       console.debug('[Recommend] API result', result)
       setRecommendChains(result.chains ?? [])
     } catch (err) {
@@ -248,13 +294,24 @@ export function SearchBar() {
     <div className="relative z-10 flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/70 p-4 shadow-[0_16px_60px_rgba(19,26,34,0.08)] backdrop-blur">
       <div className="flex flex-1 flex-col gap-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <input
-            value={searchKeyword}
-            onChange={(event) => setSearchKeyword(event.target.value)}
-            onKeyDown={(event) => { if (event.key === 'Enter') void handleSearch() }}
-            placeholder="Search node name..."
-            className="h-11 flex-1 rounded-2xl border border-ink-900/10 bg-white px-4 text-sm text-ink-900 outline-none transition focus:border-mint-500"
-          />
+          <div className="relative flex-1">
+            <input
+              value={searchKeyword}
+              onChange={(event) => setSearchKeyword(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') void handleSearch() }}
+              placeholder="Search node name..."
+              className="h-11 w-full rounded-2xl border border-ink-900/10 bg-white px-4 pr-24 text-sm text-ink-900 outline-none transition focus:border-mint-500"
+            />
+            <button
+              type="button"
+              onClick={() => void handleClearAll()}
+              disabled={isClearing}
+              title="Clear buffer and restore the graph to its initial state"
+              className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isClearing ? 'Clearing...' : 'Clear'}
+            </button>
+          </div>
 
           <button
             type="button"
@@ -273,9 +330,9 @@ export function SearchBar() {
                 ? 'bg-mint-500 text-white'
                 : 'bg-ink-950 text-white hover:bg-ink-900'
             }`}
-            title="过滤器"
+            title="Toggle filters"
           >
-            {activeNodeFilters.length > 0 ? `筛选 (${activeNodeFilters.length})` : '+'}
+            {activeNodeFilters.length > 0 ? `Filter (${activeNodeFilters.length})` : '+'}
           </button>
 
           <button
@@ -283,38 +340,38 @@ export function SearchBar() {
             onClick={() => void handleRecommendClick()}
             disabled={!canActivateRecommend || isRecommending}
             aria-label="Open recommendation chains"
-            title={canActivateRecommend ? '生成推荐链路' : '请在至少两个图谱中设置节点偏好（至少一个正向）'}
+            title={canActivateRecommend ? 'Generate recommendation chains' : 'Please set at least one positive preference first'}
             className={`h-11 rounded-2xl px-4 text-sm font-semibold transition md:w-auto ${
               canActivateRecommend
                 ? 'bg-ink-950 text-white hover:bg-ink-900'
                 : 'cursor-not-allowed bg-slate-200 text-slate-400'
             }`}
           >
-            {isRecommending ? '…' : '->'}
+            {isRecommending ? '...' : '->'}
           </button>
 
           {hasPreferences ? (
             <button
               type="button"
               onClick={() => void handleClearPreferences()}
-              title="清除所有节点偏好，恢复到 neutral 状态"
-              className="h-11 rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-600 transition hover:bg-rose-100 md:w-auto"
+              title="Clear all node preferences"
+              className="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 md:w-auto"
             >
-              Clear
+              Clear Preferences
             </button>
           ) : null}
         </div>
 
         {showMissingToast ? (
           <div className="w-fit rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
-            当前结点不存在
+            No matching node was found.
           </div>
         ) : null}
 
         {isFilterOpen ? (
-          <div className="rounded-2xl border border-ink-900/8 bg-white/90 p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-2xl border border-ink-900/8 bg-white/90 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-500">节点过滤器</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-500">Node Filters</p>
               {activeNodeFilters.length > 0 ? (
                 <button
                   type="button"
@@ -322,7 +379,7 @@ export function SearchBar() {
                   disabled={isApplying}
                   className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
                 >
-                  清空全部
+                  Clear All
                 </button>
               ) : null}
             </div>
@@ -339,14 +396,14 @@ export function SearchBar() {
                     }`}
                   >
                     <span>{filter.field}:{String(filter.value)}</span>
-                    <span className="opacity-60">({filter.mode === 'positive' ? '保留' : '排除'})</span>
+                    <span className="opacity-60">({filter.mode === 'positive' ? 'keep' : 'exclude'})</span>
                     <button
                       type="button"
                       onClick={() => void handleRemoveFilter(filter)}
                       disabled={isApplying}
                       className="ml-1 rounded-full leading-none opacity-60 hover:opacity-100"
                     >
-                      ×
+                      x
                     </button>
                   </div>
                 ))}
@@ -383,8 +440,8 @@ export function SearchBar() {
                 onChange={(e) => setFilterMode(e.target.value as FilterMode)}
                 className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
               >
-                <option value="negative">排除匹配</option>
-                <option value="positive">仅保留匹配</option>
+                <option value="negative">Exclude matches</option>
+                <option value="positive">Keep matches</option>
               </select>
 
               <button
@@ -393,7 +450,7 @@ export function SearchBar() {
                 disabled={isApplying || !filterValue.trim()}
                 className="h-9 w-36 rounded-xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-50"
               >
-                添加
+                Add Filter
               </button>
             </div>
           </div>
@@ -441,5 +498,3 @@ function buildHighlightMap(results: SelectedGraphNode[]) {
     company: results.filter((item) => item.graphArea === 'company').map((item) => item.id),
   }
 }
-
-
