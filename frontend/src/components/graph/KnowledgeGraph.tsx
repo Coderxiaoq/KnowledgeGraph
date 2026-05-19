@@ -25,6 +25,18 @@ export type KnowledgeGraphProps = {
   onNodeHover?: (node: KnowledgeGraphNodeEvent | null) => void
 }
 
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 3
+const BASE_NODE_SIZE = 54
+const BASE_FONT_SIZE = 11
+const BASE_EDGE_WIDTH = 1.8
+const BASE_EDGE_FONT_SIZE = 8
+const HOVER_SCALE = 1.12
+const FOCUS_ZOOM_LEVEL = 1.6
+const CORE_NODE_DEGREE_THRESHOLD = 4
+const ZOOM_STEP = 0.18
+const ZOOM_ANIMATION_MS = 140
+
 function toElements(data: GraphData): ElementDefinition[] {
   return [...data.nodes, ...data.edges].map((element) => ({
     ...element,
@@ -70,6 +82,15 @@ export function KnowledgeGraph({
   const onNodeClickRef = useRef(onNodeClick)
   const onNodeHoverRef = useRef(onNodeHover)
   const previousDataSizeRef = useRef(0)
+  const previousFocusedNodeIdRef = useRef<string | null>(null)
+  const preFocusViewportRef = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(
+    null,
+  )
+  const wheelZoomFrameRef = useRef<number | null>(null)
+  const pendingZoomLevelRef = useRef<number | null>(null)
+  const pendingRenderedPositionRef = useRef<{ x: number; y: number } | null>(null)
+  const zoomStyleFrameRef = useRef<number | null>(null)
+  const isPointerInsideRef = useRef(false)
   const setGraphInteraction = useGraphStore((state) => state.setGraphInteraction)
 
   const layoutMode = useMemo(
@@ -83,12 +104,151 @@ export function KnowledgeGraph({
   }, [onNodeClick, onNodeHover])
 
   useEffect(() => {
+    const container = containerRef.current
+
+    if (!container) {
+      return
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!isPointerInsideRef.current) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      const cy = cyRef.current
+
+      if (!cy) {
+        return
+      }
+
+      setGraphInteraction({
+        isGraphInteracting: true,
+        isZoomingGraph: true,
+      })
+      const direction = event.deltaY > 0 ? -1 : 1
+      const nextLevel = clampZoom(
+        (pendingZoomLevelRef.current ?? cy.zoom()) * Math.exp(direction * ZOOM_STEP),
+      )
+
+      pendingZoomLevelRef.current = nextLevel
+      pendingRenderedPositionRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+      }
+
+      if (!wheelZoomFrameRef.current) {
+        wheelZoomFrameRef.current = window.requestAnimationFrame(() => {
+          wheelZoomFrameRef.current = null
+
+          const level = pendingZoomLevelRef.current
+          const renderedPosition = pendingRenderedPositionRef.current
+
+          pendingZoomLevelRef.current = null
+          pendingRenderedPositionRef.current = null
+
+          if (level === null || !renderedPosition) {
+            return
+          }
+
+          cy.stop()
+          cy.animate(
+            {
+              zoom: {
+                level,
+                renderedPosition,
+              },
+            },
+            {
+              duration: ZOOM_ANIMATION_MS,
+            },
+          )
+        })
+      }
+
+      releaseInteraction(180)
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+    }
+  }, [setGraphInteraction])
+
+  useEffect(() => {
     return () => {
       if (interactionTimeoutRef.current) {
         window.clearTimeout(interactionTimeoutRef.current)
       }
+      if (wheelZoomFrameRef.current) {
+        window.cancelAnimationFrame(wheelZoomFrameRef.current)
+      }
+      if (zoomStyleFrameRef.current) {
+        window.cancelAnimationFrame(zoomStyleFrameRef.current)
+      }
     }
   }, [])
+
+  function clampZoom(level: number) {
+    return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level))
+  }
+
+  function updateZoomStyles(cy: Core) {
+    const zoom = cy.zoom()
+    const nodeScale = Math.pow(zoom, 0.35)
+    const fontScale = Math.pow(zoom, 0.2)
+    const edgeScale = Math.pow(zoom, 0.15)
+    const nodeSize = BASE_NODE_SIZE * nodeScale
+    const fontSize = BASE_FONT_SIZE * fontScale
+    const edgeWidth = BASE_EDGE_WIDTH * edgeScale
+    const edgeFontSize = BASE_EDGE_FONT_SIZE * Math.pow(zoom, 0.14)
+    const edgeOpacity = Math.min(0.98, Math.max(0.36, 0.62 * Math.pow(zoom, 0.18)))
+    const showAllLabels = zoom >= 1
+    const showCoreLabels = zoom >= 0.7
+
+    cy.batch(() => {
+      cy.nodes().forEach((node) => {
+        const degree = node.connectedEdges().length
+        const shouldShowLabel =
+          showAllLabels || (showCoreLabels && degree >= CORE_NODE_DEGREE_THRESHOLD)
+
+        node.style({
+          width: node.hasClass('is-hovered') ? nodeSize * HOVER_SCALE : nodeSize,
+          height: node.hasClass('is-hovered') ? nodeSize * HOVER_SCALE : nodeSize,
+          'font-size': fontSize,
+          'text-opacity': shouldShowLabel ? 1 : 0,
+          'text-max-width': Math.max(34, nodeSize * 1.05),
+          'shadow-blur': node.hasClass('is-hovered') ? 22 : undefined,
+          'shadow-opacity': node.hasClass('is-hovered') ? 0.34 : undefined,
+        })
+      })
+
+      cy.edges().forEach((edge) => {
+        edge.style({
+          width: edge.hasClass('bridge-edge') ? edgeWidth * 1.6 : edgeWidth,
+          opacity: edge.hasClass('bridge-edge')
+            ? Math.min(1, edgeOpacity + 0.18)
+            : edgeOpacity,
+          'font-size': edgeFontSize,
+          'text-opacity': zoom > 1.05 ? 1 : 0,
+        })
+      })
+    })
+  }
+
+  function scheduleZoomStyleUpdate(cy: Core) {
+    if (zoomStyleFrameRef.current) {
+      return
+    }
+
+    zoomStyleFrameRef.current = window.requestAnimationFrame(() => {
+      zoomStyleFrameRef.current = null
+      updateZoomStyles(cy)
+    })
+  }
 
   function blockEvent(event: React.SyntheticEvent<HTMLDivElement>) {
     event.stopPropagation()
@@ -121,13 +281,13 @@ export function KnowledgeGraph({
         nodeCount: data.nodes.length,
         incremental: false,
       }) as unknown as LayoutOptions,
-      minZoom: 0.4,
-      maxZoom: 2,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       wheelSensitivity,
       autoungrabify: false,
       autounselectify: false,
       boxSelectionEnabled: false,
-      userZoomingEnabled: true,
+      userZoomingEnabled: false,
       userPanningEnabled: true,
       motionBlur: true,
       motionBlurOpacity: 0.12,
@@ -143,15 +303,18 @@ export function KnowledgeGraph({
     cy.on('dbltap', 'node', (event) => {
       const neighborhood = event.target.closedNeighborhood()
       cy.fit(neighborhood, 80)
+      scheduleZoomStyleUpdate(cy)
     })
 
     cy.on('mouseover', 'node', (event) => {
       event.target.addClass('is-hovered')
+      scheduleZoomStyleUpdate(cy)
       onNodeHoverRef.current?.(toNodeEvent(event.target))
     })
 
     cy.on('mouseout', 'node', (event) => {
       event.target.removeClass('is-hovered')
+      scheduleZoomStyleUpdate(cy)
       onNodeHoverRef.current?.(null)
     })
 
@@ -180,6 +343,7 @@ export function KnowledgeGraph({
         isGraphInteracting: true,
         isZoomingGraph: true,
       })
+      scheduleZoomStyleUpdate(cy)
       releaseInteraction(180)
     })
 
@@ -193,6 +357,7 @@ export function KnowledgeGraph({
 
     cyRef.current = cy
     previousDataSizeRef.current = data.nodes.length
+    scheduleZoomStyleUpdate(cy)
 
     return () => {
       releaseInteraction(0)
@@ -227,6 +392,7 @@ export function KnowledgeGraph({
       .run()
 
     previousDataSizeRef.current = nextSize
+    scheduleZoomStyleUpdate(cy)
   }, [data, layoutMode])
 
   useEffect(() => {
@@ -371,6 +537,7 @@ export function KnowledgeGraph({
     if (activeNode.nonempty()) {
       activeNode.addClass('is-active')
     }
+    scheduleZoomStyleUpdate(cy)
   }, [
     activeNodeId,
     dislikedNodeIds,
@@ -385,7 +552,32 @@ export function KnowledgeGraph({
   useEffect(() => {
     const cy = cyRef.current
 
-    if (!cy || !focusedNodeId) {
+    if (!cy) {
+      return
+    }
+
+    const previousFocusedNodeId = previousFocusedNodeIdRef.current
+
+    if (!focusedNodeId) {
+      if (previousFocusedNodeId && preFocusViewportRef.current) {
+        const viewport = preFocusViewportRef.current
+
+        window.requestAnimationFrame(() => {
+          cy.stop()
+          cy.animate(
+            {
+              zoom: viewport.zoom,
+              pan: viewport.pan,
+            },
+            {
+              duration: 220,
+            },
+          )
+        })
+      }
+
+      previousFocusedNodeIdRef.current = null
+      preFocusViewportRef.current = null
       return
     }
 
@@ -396,10 +588,29 @@ export function KnowledgeGraph({
     }
 
     window.requestAnimationFrame(() => {
+      cy.stop()
+      if (!previousFocusedNodeId) {
+        preFocusViewportRef.current = {
+          zoom: cy.zoom(),
+          pan: cy.pan(),
+        }
+      }
+
       focusedNode.select()
-      cy.fit(focusedNode, 100)
-      cy.center(focusedNode)
+      cy.animate(
+        {
+          center: {
+            eles: focusedNode,
+          },
+          zoom: Math.max(cy.zoom(), FOCUS_ZOOM_LEVEL),
+        },
+        {
+          duration: 300,
+        },
+      )
     })
+
+    previousFocusedNodeIdRef.current = focusedNodeId
   }, [focusedNodeId])
 
   return (
@@ -421,14 +632,24 @@ export function KnowledgeGraph({
         blockEvent(event)
         releaseInteraction()
       }}
+      onPointerEnter={(event) => {
+        blockEvent(event)
+        isPointerInsideRef.current = true
+      }}
+      onPointerLeave={(event) => {
+        blockEvent(event)
+        isPointerInsideRef.current = false
+      }}
       onMouseDown={blockEvent}
       onWheel={(event) => {
         blockEvent(event)
-        setGraphInteraction({
-          isGraphInteracting: true,
-          isZoomingGraph: true,
-        })
-        releaseInteraction(180)
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      style={{
+        overscrollBehavior: 'contain',
+        touchAction: 'none',
+        contain: 'layout paint size',
       }}
       className={className ?? 'h-[260px] min-h-[260px] w-full rounded-3xl bg-paper-50/70'}
     />

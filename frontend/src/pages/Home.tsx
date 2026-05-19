@@ -92,7 +92,7 @@ export function Home() {
   return (
     <AppShell>
       <main className="flex flex-1 flex-col pb-24 md:pb-28 lg:pb-32">
-        <section className="relative overflow-hidden px-6 pb-8 pt-8 md:px-8 md:pb-10 md:pt-10 lg:px-12 lg:pb-12 lg:pt-12">
+        <section className="relative overflow-hidden px-6 pb-4 pt-6 md:px-8 md:pb-5 md:pt-7 lg:px-12 lg:pb-6 lg:pt-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,209,102,0.28),_transparent_38%)]" />
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -109,18 +109,17 @@ export function Home() {
             <p className="mt-5 max-w-3xl text-base leading-7 text-ink-700 md:text-lg">
               {content.subtitle}
             </p>
-            <SearchBar />
           </motion.div>
         </section>
 
-        <section className="px-6 pb-8 md:px-8 md:pb-10 lg:px-12 lg:pb-12">
+        <section className="px-6 pb-4 md:px-8 md:pb-5 lg:px-12 lg:pb-6">
           <motion.div
             ref={graphLayoutRef}
             layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-            className="mx-auto flex w-full max-w-7xl min-h-[440px] flex-col gap-4 lg:flex-row"
+            className="mx-auto flex w-full max-w-7xl min-h-[440px] min-w-0 flex-col gap-4 overflow-hidden lg:flex-row"
           >
             {orderedPanels.map((panelId, index) => {
               const panel = panels[panelId]
@@ -135,7 +134,7 @@ export function Home() {
                     flexBasis: getPanelBasis(index, isFocusedLayout),
                   }}
                   transition={{ type: 'spring', stiffness: 240, damping: 32, mass: 0.9 }}
-                  className="min-w-0 lg:flex lg:min-h-[440px]"
+                  className="min-w-0 min-h-0 overflow-hidden lg:flex lg:min-h-[440px]"
                 >
                   <GraphPanel
                     panelId={panel.id}
@@ -151,6 +150,17 @@ export function Home() {
                 </motion.div>
               )
             })}
+          </motion.div>
+        </section>
+
+        <section className="px-6 pb-8 md:px-8 md:pb-10 lg:px-12 lg:pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.12, ease: 'easeOut' }}
+            className="mx-auto w-full max-w-7xl"
+          >
+            <SearchBar />
           </motion.div>
         </section>
       </main>

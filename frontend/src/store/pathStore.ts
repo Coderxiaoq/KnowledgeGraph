@@ -4,6 +4,7 @@ import type { GraphPanelId, GraphPathNode } from '../types/graph'
 type PathStoreState = {
   hoveredPathNodeId: string | null
   activePathNodeId: string | null
+  isPathPanelOpen: boolean
   navigationRequest: {
     nodeId: string
     panelId: GraphPanelId
@@ -14,6 +15,7 @@ type PathStoreState = {
 type PathStoreActions = {
   setHoveredPathNodeId: (nodeId: string | null) => void
   setActivePathNodeId: (nodeId: string | null) => void
+  setPathPanelOpen: (isOpen: boolean) => void
   requestNavigation: (payload: { nodeId: string; panelId: GraphPanelId }) => void
   clearNavigationRequest: () => void
 }
@@ -21,9 +23,11 @@ type PathStoreActions = {
 export const usePathStore = create<PathStoreState & PathStoreActions>((set) => ({
   hoveredPathNodeId: null,
   activePathNodeId: null,
+  isPathPanelOpen: false,
   navigationRequest: null,
   setHoveredPathNodeId: (hoveredPathNodeId) => set({ hoveredPathNodeId }),
   setActivePathNodeId: (activePathNodeId) => set({ activePathNodeId }),
+  setPathPanelOpen: (isPathPanelOpen) => set({ isPathPanelOpen }),
   requestNavigation: ({ nodeId, panelId }) =>
     set({
       activePathNodeId: nodeId,

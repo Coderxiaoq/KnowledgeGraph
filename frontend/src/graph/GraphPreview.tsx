@@ -46,6 +46,7 @@ export const GraphPreview = memo(function GraphPreview({
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
   const navigationRequest = usePathStore((state) => state.navigationRequest)
   const clearNavigationRequest = usePathStore((state) => state.clearNavigationRequest)
+  const isPathPanelOpen = usePathStore((state) => state.isPathPanelOpen)
   const selectedNode = useGraphStore((state) => state.selectedNode)
   const selectedNodes = useGraphStore((state) => state.selectedNodes)
   const highlightedNodes = useGraphStore((state) => state.highlightedNodes)
@@ -56,8 +57,6 @@ export const GraphPreview = memo(function GraphPreview({
   const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
   const focusedNode = useGraphStore((state) => state.focusedNode)
   const currentFocusColumn = useGraphStore((state) => state.currentFocusColumn)
-  const toggleSelectedNode = useGraphStore((state) => state.toggleSelectedNode)
-  const clearPanelSelection = useGraphStore((state) => state.clearPanelSelection)
   const setHoveredNode = useGraphStore((state) => state.setHoveredNode)
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
   const setHiddenNodes = useGraphStore((state) => state.setHiddenNodes)
@@ -73,6 +72,7 @@ export const GraphPreview = memo(function GraphPreview({
   const undislikeNode = useGraphStore((state) => state.undislikeNode)
   const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const clearPreferences = useGraphStore((state) => state.clearPreferences)
+  const resetGraphState = useGraphStore((state) => state.resetGraphState)
   const [graphData, setGraphData] = useState<GraphData>(() => getGraphByPanel(panelId))
   const [loading, setLoading] = useState(graphData.nodes.length === 0)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +82,61 @@ export const GraphPreview = memo(function GraphPreview({
   const controllerRef = useRef<AbortController | null>(null)
   const hoverClearTimerRef = useRef<number | null>(null)
   const initialGraphRef = useRef<GraphData | null>(null)
+  const focusSessionRef = useRef(0)
+  const focusSnapshotRef = useRef<{
+    graphData: GraphData
+    activeNodeId: string
+    selectedNode: SelectedGraphNode | null
+    selectedNodes: Record<GraphPanelId, SelectedGraphNode[]>
+    focusedNode: SelectedGraphNode | null
+    currentFocusColumn: GraphPanelId
+    hoveredNode: SelectedGraphNode | null
+    highlightedNodes: Record<GraphPanelId, string[]>
+    hiddenNodes: Record<GraphPanelId, string[]>
+    activeBridgeEdges: Record<GraphPanelId, CytoscapeEdge[]>
+    currentExpandGraph: GraphResponse | null
+    currentPath: GraphPath | null
+    hoveredNodeLabel: string
+  } | null>(null)
+
+  const captureFocusSnapshot = useCallback(() => {
+    const state = useGraphStore.getState()
+
+    focusSnapshotRef.current = {
+      graphData: {
+        nodes: [...graphData.nodes],
+        edges: [...graphData.edges],
+      },
+      activeNodeId: useAppStore.getState().activeNodeIds[panelId],
+      selectedNode: state.selectedNode,
+      selectedNodes: {
+        skill: [...state.selectedNodes.skill],
+        job: [...state.selectedNodes.job],
+        company: [...state.selectedNodes.company],
+      },
+      focusedNode: state.focusedNode,
+      currentFocusColumn: state.currentFocusColumn,
+      hoveredNode: state.hoveredNode,
+      highlightedNodes: {
+        skill: [...state.highlightedNodes.skill],
+        job: [...state.highlightedNodes.job],
+        company: [...state.highlightedNodes.company],
+      },
+      hiddenNodes: {
+        skill: [...state.hiddenNodes.skill],
+        job: [...state.hiddenNodes.job],
+        company: [...state.hiddenNodes.company],
+      },
+      activeBridgeEdges: {
+        skill: [...state.activeBridgeEdges.skill],
+        job: [...state.activeBridgeEdges.job],
+        company: [...state.activeBridgeEdges.company],
+      },
+      currentExpandGraph: state.currentExpandGraph,
+      currentPath: state.currentPath,
+      hoveredNodeLabel,
+    }
+  }, [graphData.edges, graphData.nodes, hoveredNodeLabel, panelId])
 
   const selectedNodeIds = selectedNodes[panelId].map((node) => node.id)
   const activeSelectedNode = selectedNode?.graphArea === panelId ? selectedNode : null
@@ -96,6 +151,16 @@ export const GraphPreview = memo(function GraphPreview({
     : false
   const hasPreferences = likedNodes.length > 0 || dislikedNodes.length > 0
 
+  const clearLinkedGraphState = useCallback(() => {
+    focusSessionRef.current += 1
+    focusSnapshotRef.current = null
+    setHoveredNodeLabel('')
+    resetGraphState()
+    setActiveNodeId('skill', '')
+    setActiveNodeId('job', '')
+    setActiveNodeId('company', '')
+  }, [resetGraphState, setActiveNodeId])
+
   useEffect(() => {
     void syncPreferenceState({
       hideDisliked: true,
@@ -108,6 +173,21 @@ export const GraphPreview = memo(function GraphPreview({
     likedNodes,
     dislikedNodes,
   ])
+
+  useEffect(() => {
+    if (!isPanelFocused) {
+      focusSessionRef.current += 1
+      focusSnapshotRef.current = null
+    }
+  }, [isPanelFocused])
+
+  useEffect(() => {
+    if (focusedNode !== null) {
+      return
+    }
+
+    clearLinkedGraphState()
+  }, [clearLinkedGraphState, focusedNode])
 
   const loadGraph = useCallback(async () => {
     controllerRef.current?.abort()
@@ -122,6 +202,7 @@ export const GraphPreview = memo(function GraphPreview({
       }
 
       initialGraphRef.current = nextGraph
+      focusSnapshotRef.current = null
 
       await applyGraphDataIncrementally(nextGraph, setGraphData, frameRef)
       setGraphByPanel(panelId, nextGraph)
@@ -174,7 +255,11 @@ export const GraphPreview = memo(function GraphPreview({
   }, [graphData.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
 
   const syncPanelsFromExpand = useCallback(
-    (expandedGraph: GraphResponse) => {
+    (expandedGraph: GraphResponse, sessionId: number) => {
+      if (focusSessionRef.current !== sessionId) {
+        return
+      }
+
       const highlighted = buildHighlightedMap(expandedGraph)
       const nextHidden = buildHiddenMap(expandedGraph, selectedNodes, dislikedNodes)
 
@@ -194,13 +279,17 @@ export const GraphPreview = memo(function GraphPreview({
   )
 
   const handleBridge = useCallback(
-    async (node: SelectedGraphNode, use2Hop: boolean) => {
+    async (node: SelectedGraphNode, use2Hop: boolean, sessionId: number) => {
       const expandedGraph = use2Hop
         ? await expandNode2Hop(node.id, { limit: 160 })
         : await expandNode(node.id)
 
+      if (focusSessionRef.current !== sessionId) {
+        return null
+      }
+
       setActiveBridgeEdges(panelId, buildBridgeEdges(expandedGraph))
-      syncPanelsFromExpand(expandedGraph)
+      syncPanelsFromExpand(expandedGraph, sessionId)
 
       return expandedGraph
     },
@@ -228,6 +317,7 @@ export const GraphPreview = memo(function GraphPreview({
       graphArea: panelId,
     }
 
+    captureFocusSnapshot()
     setCurrentFocusColumn(panelId)
     applyColumnContext(panelId, [...selectedNodes[panelId], nextNode])
     setActiveNodeId(panelId, nextNode.id)
@@ -235,9 +325,10 @@ export const GraphPreview = memo(function GraphPreview({
       selectedNode: nextNode,
       focusedNode: nextNode,
     })
+    const sessionId = ++focusSessionRef.current
 
     clearNavigationRequest()
-    void handleBridge(nextNode, shouldUseTwoHopExpand(panelId))
+    void handleBridge(nextNode, shouldUseTwoHopExpand(panelId), sessionId)
   }, [
     clearNavigationRequest,
     graphData.nodes,
@@ -245,49 +336,27 @@ export const GraphPreview = memo(function GraphPreview({
     navigationRequest,
     panelId,
     applyColumnContext,
+    captureFocusSnapshot,
     selectedNodes,
     setActiveNodeId,
     setCurrentFocusColumn,
   ])
 
   const resetPanelToInitialState = useCallback(() => {
-    const initialGraph = initialGraphRef.current ?? getGraphByPanel(panelId)
+    clearLinkedGraphState()
+    const snapshot = focusSnapshotRef.current
+    const initialGraph =
+      snapshot?.graphData ?? initialGraphRef.current ?? getGraphByPanel(panelId)
 
     setGraphData(initialGraph)
     setGraphByPanel(panelId, initialGraph)
-    setActiveNodeId(panelId, '')
-    clearPanelSelection(panelId)
-    clearActiveBridgeEdges(panelId)
-    setHoveredNode(null)
-    setHoveredNodeLabel('')
-    setCurrentExpandGraph(null)
-
-    if (focusedNode?.graphArea === panelId) {
-      useGraphStore.setState({ focusedNode: null })
+    if (snapshot) {
+      useGraphStore.setState({
+        selectedNode: snapshot.selectedNode,
+      })
+      return
     }
-
-    setHighlightedNodes({
-      skill: [],
-      job: [],
-      company: [],
-    })
-
-    setHiddenNodes({
-      skill: [],
-      job: [],
-      company: [],
-    })
-  }, [
-    clearActiveBridgeEdges,
-    clearPanelSelection,
-    focusedNode?.graphArea,
-    panelId,
-    setActiveNodeId,
-    setCurrentExpandGraph,
-    setHiddenNodes,
-    setHighlightedNodes,
-    setHoveredNode,
-  ])
+  }, [clearLinkedGraphState, panelId])
 
   const handleNodeClick = useCallback(
     async (node: SelectedGraphNode) => {
@@ -295,16 +364,16 @@ export const GraphPreview = memo(function GraphPreview({
         return
       }
 
-      const isAlreadySelected = selectedNodes[panelId].some((item) => item.id === node.id)
       const isSameFocusedNode =
-        selectedNode?.graphArea === panelId &&
-        selectedNode.id === node.id &&
-        isAlreadySelected
+        focusedNode?.graphArea === panelId && focusedNode.id === node.id
+      const isAlreadySelected = selectedNodes[panelId].some((item) => item.id === node.id)
 
-      if (isSameFocusedNode && selectedNodes[panelId].length <= 1) {
+      if (isSameFocusedNode) {
         resetPanelToInitialState()
         return
       }
+
+      captureFocusSnapshot()
 
       if (isAlreadySelected) {
         setActiveNodeId(panelId, node.id)
@@ -312,25 +381,30 @@ export const GraphPreview = memo(function GraphPreview({
         return
       }
 
+      const nextSelectedNodes = [...selectedNodes[panelId], node]
       setCurrentFocusColumn(panelId)
-      applyColumnContext(panelId, [...selectedNodes[panelId], node])
+      applyColumnContext(panelId, nextSelectedNodes)
       setActiveNodeId(panelId, node.id)
-      toggleSelectedNode(panelId, node)
-      useGraphStore.setState({ focusedNode: node })
+      useGraphStore.setState({
+        selectedNode: node,
+        focusedNode: node,
+      })
+      const sessionId = ++focusSessionRef.current
 
-      await handleBridge(node, shouldUseTwoHopExpand(panelId))
+      await handleBridge(node, shouldUseTwoHopExpand(panelId), sessionId)
     },
     [
       applyColumnContext,
+      captureFocusSnapshot,
       handleBridge,
       panelId,
       resetPanelToInitialState,
+      focusedNode,
       selectedNode,
       selectedNodes,
       isPanelFocused,
       setActiveNodeId,
       setCurrentFocusColumn,
-      toggleSelectedNode,
     ],
   )
 
@@ -378,21 +452,23 @@ export const GraphPreview = memo(function GraphPreview({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="min-h-0 overflow-hidden space-y-3">
       <KnowledgeGraph
         data={graphData}
         activeNodeId={activeVisualNodeId}
-        highlightedNodeIds={highlightedNodes[panelId]}
+        highlightedNodeIds={
+          isPathPanelOpen ? highlightedNodes[panelId] : []
+        }
         hiddenNodeIds={hiddenNodes[panelId]}
         visibleEdgeIds={visibleEdgeIds}
-        bridgeEdges={activeBridgeEdges[panelId]}
+        bridgeEdges={isPathPanelOpen ? activeBridgeEdges[panelId] : []}
         hoveredNodeId={hoveredNode?.graphArea === panelId ? hoveredNode.id : null}
         likedNodeIds={likedNodes.map((node) => node.id)}
         dislikedNodeIds={dislikedNodes.map((node) => node.id)}
         focusedNodeId={focusedNode?.graphArea === panelId ? focusedNode.id : null}
         layoutName={DEFAULT_LAYOUT_MODE}
         wheelSensitivity={DEFAULT_WHEEL_SENSITIVITY}
-        className="h-[320px] w-full rounded-3xl bg-paper-50/70"
+        className="h-[320px] min-h-0 w-full overflow-hidden rounded-3xl bg-paper-50/70"
         onNodeClick={(node) => void handleNodeClick(toSelectedGraphNode(panelId, node))}
         onNodeHover={handleNodeHover}
       />

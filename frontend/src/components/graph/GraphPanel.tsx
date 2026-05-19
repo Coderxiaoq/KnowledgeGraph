@@ -34,7 +34,7 @@ export function GraphPanel({
   return (
     <motion.div
       layout
-      className="group relative flex h-full min-h-[440px] w-full flex-col overflow-hidden rounded-[28px] border border-white/60 bg-white/78 text-left shadow-[0_24px_80px_rgba(19,26,34,0.12)] backdrop-blur-xl"
+      className="group relative flex h-full min-h-[440px] w-full min-w-0 min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/60 bg-white/78 text-left shadow-[0_24px_80px_rgba(19,26,34,0.12)] backdrop-blur-xl"
       transition={{ type: 'spring', stiffness: 240, damping: 30 }}
     >
       <div className="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top,_rgba(122,231,199,0.24),_transparent_65%)]" />
@@ -73,8 +73,8 @@ export function GraphPanel({
         </div>
       </div>
 
-      <div className="relative z-10 mt-1 flex-1 px-4 pb-4">
-        <div className="h-full rounded-[24px] border border-ink-900/8 bg-paper-50/70 p-3">
+      <div className="relative z-10 mt-1 flex-1 min-h-0 px-4 pb-4">
+        <div className="h-full min-h-0 overflow-hidden rounded-[24px] border border-ink-900/8 bg-paper-50/70 p-3 [contain:layout_paint_size]">
           <GraphPreview panelId={panelId} graph={graph} isPanelFocused={isFocused} />
         </div>
       </div>

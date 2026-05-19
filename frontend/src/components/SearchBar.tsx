@@ -5,6 +5,7 @@ import { getGraphByPanel } from '../services/homeService'
 import { searchNodes } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
 import { useAppStore } from '../store/useAppStore'
+import { usePathStore } from '../store/pathStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphNode as RawGraphNode } from '../types/graphApi'
 
@@ -29,17 +30,15 @@ export function SearchBar() {
   const processedColumns = useGraphStore((state) => state.processedColumns)
   const searchResults = useGraphStore((state) => state.searchResults)
   const [isSearching, setIsSearching] = useState(false)
-  const [activeNodeType, setActiveNodeType] = useState<'all' | GraphPanelId>('all')
+  const [searchCandidate, setSearchCandidate] = useState<SelectedGraphNode | null>(null)
+  const [showMissingToast, setShowMissingToast] = useState(false)
   const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
+  const requestNavigation = usePathStore((state) => state.requestNavigation)
+  const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
 
   const rankedResults = useMemo(() => {
-    const filtered =
-      activeNodeType === 'all'
-        ? searchResults
-        : searchResults.filter((node) => node.graphArea === activeNodeType)
-
-    return rankSearchResults(filtered, {
+    return rankSearchResults(searchResults, {
       graphDataByPanel: {
         skill: getGraphByPanel('skill'),
         job: getGraphByPanel('job'),
@@ -55,7 +54,6 @@ export function SearchBar() {
       processedColumns,
     })
   }, [
-    activeNodeType,
     currentFocusColumn,
     dislikedNodeIds,
     focusedNode,
@@ -71,10 +69,13 @@ export function SearchBar() {
     const keyword = searchKeyword.trim()
 
     if (!keyword) {
+      setSearchCandidate(null)
+      setShowMissingToast(false)
       return
     }
 
     setIsSearching(true)
+    setShowMissingToast(false)
 
     try {
       const graph = await searchNodes({
@@ -87,35 +88,43 @@ export function SearchBar() {
       setSearchResults(results)
 
       if (!focusNode) {
+        setSearchCandidate(null)
         setFocusedNode(null)
+        setShowMissingToast(true)
         return
       }
 
-      setFocusedNode(focusNode)
-      setCurrentFocusColumn(focusNode.graphArea)
-      setFocusedPanel(focusNode.graphArea)
-      setActiveNodeId(focusNode.graphArea, focusNode.id)
-      setHighlightedNodes(buildHighlightMap(results))
-      setHiddenNodes(buildHiddenMap(results))
-      recalculateRecommendations(results, { hideDisliked: true })
+      setSearchCandidate(focusNode)
+      setShowMissingToast(false)
     } finally {
       setIsSearching(false)
     }
   }
 
-  function focusSearchResult(node: SelectedGraphNode) {
+  function activateSearchTask(node: SelectedGraphNode) {
+    setPathPanelOpen(true)
     setFocusedNode(node)
     setCurrentFocusColumn(node.graphArea)
     setFocusedPanel(node.graphArea)
     setActiveNodeId(node.graphArea, node.id)
     setHighlightedNodes(buildHighlightMap([node]))
     setHiddenNodes(buildHiddenMap([node]))
+    recalculateRecommendations([node], { hideDisliked: true })
+    requestNavigation({
+      nodeId: node.id,
+      panelId: node.graphArea,
+    })
+  }
+
+  function focusSearchResult(node: SelectedGraphNode) {
+    setSearchCandidate(node)
+    setShowMissingToast(false)
   }
 
   return (
-    <div className="relative z-10 mt-6 flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/70 p-4 shadow-[0_16px_60px_rgba(19,26,34,0.08)] backdrop-blur xl:flex-row xl:items-center">
+    <div className="relative z-10 flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/70 p-4 shadow-[0_16px_60px_rgba(19,26,34,0.08)] backdrop-blur">
       <div className="flex flex-1 flex-col gap-3">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <input
             value={searchKeyword}
             onChange={(event) => setSearchKeyword(event.target.value)}
@@ -123,32 +132,48 @@ export function SearchBar() {
             className="h-11 flex-1 rounded-2xl border border-ink-900/10 bg-white px-4 text-sm text-ink-900 outline-none transition focus:border-mint-500"
           />
 
-          <div className="flex items-center gap-2">
-            {(['all', 'skill', 'job', 'company'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setActiveNodeType(type)}
-                className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
-                  activeNodeType === type
-                    ? 'bg-ink-950 text-white'
-                    : 'bg-white text-ink-700 hover:bg-paper-50'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
           <button
             type="button"
             onClick={() => void handleSearch()}
             disabled={isSearching}
-            className="h-11 rounded-2xl bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
+            className="h-11 rounded-2xl bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60 md:w-auto"
           >
             {isSearching ? 'Searching...' : 'Search'}
           </button>
+
+          <button
+            type="button"
+            className="h-11 rounded-2xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 md:w-auto"
+          >
+            +
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!searchCandidate) {
+                return
+              }
+
+              activateSearchTask(searchCandidate)
+            }}
+            disabled={!searchCandidate}
+            aria-label="Open inference task"
+            className={`h-11 rounded-2xl px-4 text-sm font-semibold transition md:w-auto ${
+              searchCandidate
+                ? 'bg-ink-950 text-white hover:bg-ink-900'
+                : 'cursor-not-allowed bg-slate-200 text-slate-400'
+            }`}
+          >
+            -&gt;
+          </button>
         </div>
+
+        {showMissingToast ? (
+          <div className="w-fit rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
+            当前结点不存在
+          </div>
+        ) : null}
 
         {rankedResults.length > 0 ? (
           <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-2xl border border-ink-900/8 bg-paper-50/70 p-2">
