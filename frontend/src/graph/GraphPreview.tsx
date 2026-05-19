@@ -1,12 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph'
-import {
-  getGraphByPanel,
-  getPanelGraphLoader,
-  setGraphByPanel,
-} from '../services/homeService'
-import { expandNode, expandNode2Hop } from '../services/graphApi'
 import {
   getGraphByPanel,
   getPanelGraphLoader,
@@ -15,20 +8,8 @@ import {
 import { expandNode, expandNode2Hop } from '../services/graphApi'
 import { useGraphStore, toSelectedGraphNode } from '../store/graphStore'
 import { usePathStore } from '../store/pathStore'
-import { usePathStore } from '../store/pathStore'
 import { useAppStore } from '../store/useAppStore'
 import type {
-  GraphData,
-  GraphPath,
-  GraphPanelId,
-  SelectedGraphNode,
-} from '../types/graph'
-import type { CytoscapeEdge, GraphNode as RawGraphNode, GraphResponse } from '../types/graphApi'
-import {
-  normalizeGraphToken,
-  resolvePanelByLabel,
-  toCytoscapeEdge,
-} from './data'
   GraphData,
   GraphPath,
   GraphPanelId,
@@ -93,6 +74,7 @@ export const GraphPreview = memo(function GraphPreview({
   const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const clearPreferences = useGraphStore((state) => state.clearPreferences)
   const filterMatchedNodes = useGraphStore((state) => state.filterMatchedNodes)
+  const setFilterMatchedNodes = useGraphStore((state) => state.setFilterMatchedNodes)
   const backendFilterState = useGraphStore((state) => state.backendFilterState)
   const filterRefreshKey = useGraphStore((state) => state.filterRefreshKey)
   const graphReloadKey = useGraphStore((state) => state.graphReloadKey)
@@ -163,10 +145,6 @@ export const GraphPreview = memo(function GraphPreview({
   }, [graphData.edges, graphData.nodes, hoveredNodeLabel, panelId])
 
   const selectedNodeIds = selectedNodes[panelId].map((node) => node.id)
-  const activeSelectedNode = selectedNode?.graphArea === panelId ? selectedNode : null
-  const activeVisualNodeId =
-    selectedNode?.graphArea === panelId ? selectedNode.id : undefined
-  const panelSelectedNodes = selectedNodes[panelId]
   const activeSelectedNode = selectedNode?.graphArea === panelId ? selectedNode : null
   const activeVisualNodeId =
     selectedNode?.graphArea === panelId ? selectedNode.id : undefined
@@ -269,6 +247,14 @@ export const GraphPreview = memo(function GraphPreview({
 
       await applyGraphDataIncrementally(nextGraph, setGraphData, frameRef)
       setGraphByPanel(panelId, nextGraph)
+
+      if (useGraphStore.getState().backendFilterState.node_filters.length > 0) {
+        const matchedIds = nextGraph.nodes.map((n) => n.data.id)
+        setFilterMatchedNodes({
+          ...useGraphStore.getState().filterMatchedNodes,
+          [panelId]: matchedIds,
+        })
+      }
     } catch (loadError) {
       if (controllerRef.current?.signal.aborted) {
         return
@@ -295,6 +281,7 @@ export const GraphPreview = memo(function GraphPreview({
       }
     }
   }, [filterRefreshKey, loadGraph, loadVersion])
+
   useEffect(() => {
     void loadGraph()
   }, [graphReloadKey, loadGraph])
@@ -303,7 +290,6 @@ export const GraphPreview = memo(function GraphPreview({
     const selected = new Set(selectedNodeIds)
     const highlighted = new Set(highlightedNodes[panelId])
 
-    return graphData.edges
     return graphData.edges
       .filter((edge) => {
         const source = edge.data.source
@@ -319,7 +305,6 @@ export const GraphPreview = memo(function GraphPreview({
         return sourceActive && targetActive
       })
       .map((edge) => edge.data.id)
-  }, [graphData.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
   }, [graphData.edges, highlightedNodes, hoveredNode, panelId, selectedNodeIds])
 
   const syncPanelsFromExpand = useCallback(
@@ -414,21 +399,17 @@ export const GraphPreview = memo(function GraphPreview({
     async (node: SelectedGraphNode) => {
       if (!isPanelFocused) return;
 
-      // 判断是否处于过滤器状态
       const isFilterActive = backendFilterState.node_filters.length > 0;
       const matchedIds = filterMatchedNodes[panelId] || [];
       const isSameFocusedNode = focusedNode?.graphArea === panelId && focusedNode.id === node.id;
 
-
       if (isFilterActive) {
         if (isSameFocusedNode) {
-          // 再次点击已聚焦结点，恢复三类图谱为过滤后状态（所有过滤后结点可见，无高亮/隐藏）
           setHighlightedNodes({
             skill: [],
             job: [],
             company: [],
           });
-          // 只隐藏不在过滤结果中的结点，过滤结果全部可见
           const allIds = {
             skill: filterMatchedNodes.skill || [],
             job: filterMatchedNodes.job || [],
@@ -455,21 +436,17 @@ export const GraphPreview = memo(function GraphPreview({
           return;
         }
 
-        // 第一次点击过滤后的结点，聚焦并高亮相关结点，隐藏无关结点
-        // 相关结点：与该结点直接相连的结点 + 自身
         const relatedIds = new Set([node.id]);
         graphData.edges.forEach(edge => {
           if (edge.data.source === node.id && matchedIds.includes(edge.data.target)) relatedIds.add(edge.data.target);
           if (edge.data.target === node.id && matchedIds.includes(edge.data.source)) relatedIds.add(edge.data.source);
         });
 
-        // 只高亮本面板相关结点，其他面板不高亮
         setHighlightedNodes({
           skill: panelId === 'skill' ? Array.from(relatedIds) : [],
           job: panelId === 'job' ? Array.from(relatedIds) : [],
           company: panelId === 'company' ? Array.from(relatedIds) : [],
         });
-        // 隐藏本面板中与该结点无关的过滤后结点
         setHiddenNodes({
           skill: panelId === 'skill' ? matchedIds.filter(id => !relatedIds.has(id)) : [],
           job: panelId === 'job' ? matchedIds.filter(id => !relatedIds.has(id)) : [],
@@ -481,7 +458,6 @@ export const GraphPreview = memo(function GraphPreview({
         return;
       }
 
-      // 非过滤器状态下，保持原有聚焦逻辑
       if (isSameFocusedNode) {
         focusSnapshotRef.current = null;
         hasRestoredFocusRef.current = true;
@@ -620,9 +596,6 @@ export const GraphPreview = memo(function GraphPreview({
               <p className="mt-1 text-xs text-ink-500">
                 当前栏位已选 {panelSelectedNodes.length} 个节点
               </p>
-              <p className="mt-1 text-xs text-ink-500">
-                当前栏位已选 {panelSelectedNodes.length} 个节点
-              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -654,7 +627,6 @@ export const GraphPreview = memo(function GraphPreview({
               {hasPreferences ? (
                 <button
                   type="button"
-                  onClick={() => void clearPreferences()}
                   onClick={() => void clearPreferences()}
                   className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
@@ -688,37 +660,9 @@ export const GraphPreview = memo(function GraphPreview({
               })}
             </div>
           ) : null}
-          {panelSelectedNodes.length > 1 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {panelSelectedNodes.map((node) => {
-                const nodeLiked = likedNodes.some((item) => item.id === node.id)
-                const nodeDisliked = dislikedNodes.some((item) => item.id === node.id)
-
-                return (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => useGraphStore.setState({ selectedNode: node })}
-                    className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
-                      activeSelectedNode?.id === node.id
-                        ? 'bg-ink-950 text-white'
-                        : 'bg-ink-50 text-ink-700 hover:bg-ink-100'
-                    }`}
-                  >
-                    <span>{node.label}</span>
-                    {nodeLiked ? <span className="ml-2 text-emerald-500">Like</span> : null}
-                    {nodeDisliked ? <span className="ml-2 text-rose-500">Dislike</span> : null}
-                  </button>
-                )
-              })}
-            </div>
-          ) : null}
         </div>
       ) : null}
       <div className="rounded-2xl border border-ink-900/8 bg-white/70 px-4 py-3 text-sm text-ink-700">
-        {loading
-          ? 'Syncing graph data...'
-          : hoveredNodeLabel || 'Hover a node to inspect the current context.'}
         {loading
           ? 'Syncing graph data...'
           : hoveredNodeLabel || 'Hover a node to inspect the current context.'}
@@ -757,51 +701,15 @@ async function applyGraphDataIncrementally(
         resolve()
         return
       }
-})
 
-async function applyGraphDataIncrementally(
-  nextGraph: GraphData,
-  setGraphData: (graph: GraphData) => void,
-  frameRef: React.MutableRefObject<number | null>,
-) {
-  if (nextGraph.nodes.length <= LAZY_RENDER_THRESHOLD) {
-    setGraphData(nextGraph)
-    return
-  }
-
-  let cursor = 0
-  const accumulatedNodes = [] as GraphData['nodes']
-  const edges = nextGraph.edges
-
-  await new Promise<void>((resolve) => {
-    const pump = () => {
-      accumulatedNodes.push(
-        ...nextGraph.nodes.slice(cursor, cursor + LAZY_RENDER_BATCH_SIZE),
-      )
-      cursor += LAZY_RENDER_BATCH_SIZE
-
-      setGraphData({
-        nodes: [...accumulatedNodes],
-        edges,
-      })
-
-      if (cursor >= nextGraph.nodes.length) {
-        resolve()
-        return
-      }
-
-      frameRef.current = window.requestAnimationFrame(pump)
       frameRef.current = window.requestAnimationFrame(pump)
     }
-
-    frameRef.current = window.requestAnimationFrame(pump)
 
     frameRef.current = window.requestAnimationFrame(pump)
   })
 }
 
 function buildHighlightedMap(response: GraphResponse) {
-  const highlighted: Record<GraphPanelId, string[]> = {
   const highlighted: Record<GraphPanelId, string[]> = {
     skill: [],
     job: [],
@@ -815,14 +723,8 @@ function buildHighlightedMap(response: GraphResponse) {
     }
 
     highlighted[area].push(node.id)
-    if (!area) {
-      return
-    }
-
-    highlighted[area].push(node.id)
   })
 
-  return highlighted
   return highlighted
 }
 
@@ -830,10 +732,8 @@ function buildHiddenMap(
   response: GraphResponse,
   selected: Record<GraphPanelId, SelectedGraphNode[]>,
   dislikedNodes: SelectedGraphNode[],
-  dislikedNodes: SelectedGraphNode[],
 ) {
   const highlighted = buildHighlightedMap(response)
-  const dislikedIds = new Set(dislikedNodes.map((node) => node.id))
   const dislikedIds = new Set(dislikedNodes.map((node) => node.id))
 
   return (['skill', 'job', 'company'] as const).reduce(
@@ -847,7 +747,6 @@ function buildHiddenMap(
       acc[area] = panelGraph.nodes
         .map((node) => node.data.id)
         .filter((nodeId) => !keepIds.has(nodeId) && dislikedIds.has(nodeId))
-        .filter((nodeId) => !keepIds.has(nodeId) && dislikedIds.has(nodeId))
 
       return acc
     },
@@ -860,55 +759,18 @@ function buildHiddenMap(
 }
 
 function buildGraphPath(response: GraphResponse): GraphPath {
-function buildGraphPath(response: GraphResponse): GraphPath {
   return {
-    nodes: response.nodes.map((node) => ({
     nodes: response.nodes.map((node) => ({
       id: node.id,
       label: String(node.properties.name ?? node.id),
       category: node.label,
-      label: String(node.properties.name ?? node.id),
-      category: node.label,
     })),
-    edges: response.edges.map((edge) => ({
     edges: response.edges.map((edge) => ({
       id: `${edge.source}-${edge.relation}-${edge.target}`,
       source: edge.source,
       target: edge.target,
       label: edge.relation,
     })),
-  }
-}
-
-function buildBridgeEdges(response: GraphResponse): CytoscapeEdge[] {
-  return response.edges.map((edge) => ({
-    data: {
-      ...toCytoscapeEdge(edge).data,
-      id: `bridge:${edge.source}-${edge.relation}-${edge.target}`,
-      properties: edge.properties,
-    },
-  }))
-}
-
-function _matchPanelNodeIds(panelId: GraphPanelId, rawNodes: RawGraphNode[]) {
-  const panelGraph = getGraphByPanel(panelId)
-  const rawTokens = new Set(
-    rawNodes.flatMap((node) => [
-      normalizeGraphToken(node.id),
-      normalizeGraphToken(String(node.properties.name ?? '')),
-    ]),
-  )
-
-  return panelGraph.nodes
-    .filter(
-      (node) =>
-        rawTokens.has(normalizeGraphToken(node.data.id)) ||
-        rawTokens.has(normalizeGraphToken(String(node.data.label))),
-    )
-    .map((node) => node.data.id)
-}
-
-void _matchPanelNodeIds
   }
 }
 

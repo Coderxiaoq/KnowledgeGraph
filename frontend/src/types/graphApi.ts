@@ -8,14 +8,6 @@ export type GraphJson =
     }
 
 export type GraphProperties = Record<string, GraphJson>
-export type GraphJson =
-  | GraphPrimitive
-  | GraphJson[]
-  | {
-      [key: string]: GraphJson
-    }
-
-export type GraphProperties = Record<string, GraphJson>
 
 export type GraphNode = {
   id: string
@@ -78,14 +70,6 @@ export type FilterState = {
 
 export type RecommendType = 'skill_to_role' | 'role_to_company' | 'company_to_role'
 
-export type RecommendQuery = {
-  type: RecommendType
-  id1: string
-  id2: string
-  limit?: number
-  signal?: AbortSignal
-}
-
 export type RecommendPreferencePayload = {
   type: RecommendType
   primary_pos_list: string[]
@@ -103,11 +87,7 @@ export type SearchNodesParams = {
   limit?: number
   debounceMs?: number
   signal?: AbortSignal
-  debounceMs?: number
-  signal?: AbortSignal
 }
-
-export type SearchNodesResponse = GraphResponse
 
 export type SearchNodesResponse = GraphResponse
 
@@ -154,26 +134,6 @@ export type RecommendResponse = {
   currentPath: InferencePath | null
 }
 
-export type LegacyDualAreaSelection = {
-  skillNodeIds?: string[]
-  jobNodeIds?: string[]
-  companyNodeIds?: string[]
-}
-
-export type LegacyRecommend2To1Params = {
-  sourceAreas: Array<'skill' | 'job' | 'company'>
-  targetArea: 'skill' | 'job' | 'company'
-  selected: LegacyDualAreaSelection
-  filters?: FilterState
-  limit?: number
-  signal?: AbortSignal
-}
-
-export type Recommend2To1Params =
-  | RecommendQuery
-  | LegacyRecommend2To1Params
-  | RecommendPreferencePayload
-
 export type CytoscapeNode = {
   data: {
     id: string
@@ -194,12 +154,6 @@ export type CytoscapeEdge = {
 }
 
 export type CytoscapeElements = Array<CytoscapeNode | CytoscapeEdge>
-
-export type ApiEnvelope<T> = {
-  code: number
-  msg: string
-  data: T
-}
 
 export type ApiEnvelope<T> = {
   code: number

@@ -3,13 +3,7 @@ import type { Core, ElementDefinition, LayoutOptions } from 'cytoscape'
 import { cytoscape } from '../../graph/cytoscape'
 import { buildGraphLayoutOptions, getGraphLayoutMode } from '../../graph/layout'
 import { knowledgeGraphStyles } from '../../graph/styles'
-import { useEffect, useMemo, useRef } from 'react'
-import type { Core, ElementDefinition, LayoutOptions } from 'cytoscape'
-import { cytoscape } from '../../graph/cytoscape'
-import { buildGraphLayoutOptions, getGraphLayoutMode } from '../../graph/layout'
-import { knowledgeGraphStyles } from '../../graph/styles'
 import { useGraphStore } from '../../store/graphStore'
-import type { GraphData, GraphLayoutMode, KnowledgeGraphNodeEvent } from '../../types/graph'
 import type { GraphData, GraphLayoutMode, KnowledgeGraphNodeEvent } from '../../types/graph'
 import type { CytoscapeEdge } from '../../types/graphApi'
 
@@ -25,8 +19,6 @@ export type KnowledgeGraphProps = {
   likedNodeIds?: string[]
   dislikedNodeIds?: string[]
   focusedNodeId?: string | null
-  layoutName?: GraphLayoutMode
-  wheelSensitivity?: number
   layoutName?: GraphLayoutMode
   wheelSensitivity?: number
   onNodeClick?: (node: KnowledgeGraphNodeEvent) => void
@@ -51,20 +43,7 @@ function toElements(data: GraphData): ElementDefinition[] {
     ...element,
     data: {
       ...element.data,
-      degree:
-        'source' in element.data
-          ? 0
-          : 0,
-    },
-  }))
-  return [...data.nodes, ...data.edges].map((element) => ({
-    ...element,
-    data: {
-      ...element.data,
-      degree:
-        'source' in element.data
-          ? 0
-          : 0,
+      degree: 'source' in element.data ? 0 : 0,
     },
   }))
 }
@@ -91,8 +70,6 @@ export function KnowledgeGraph({
   focusedNodeId = null,
   layoutName = 'fcose',
   wheelSensitivity = 0.009,
-  layoutName = 'fcose',
-  wheelSensitivity = 0.009,
   onNodeClick,
   onNodeHover,
   onNodeRightClick,
@@ -114,11 +91,6 @@ export function KnowledgeGraph({
   const zoomStyleFrameRef = useRef<number | null>(null)
   const isPointerInsideRef = useRef(false)
   const setGraphInteraction = useGraphStore((state) => state.setGraphInteraction)
-
-  const layoutMode = useMemo(
-    () => getGraphLayoutMode(layoutName, data.nodes.length),
-    [data.nodes.length, layoutName],
-  )
 
   const layoutMode = useMemo(
     () => getGraphLayoutMode(layoutName, data.nodes.length),
@@ -321,11 +293,6 @@ export function KnowledgeGraph({
       textureOnViewport: true,
       hideEdgesOnViewport: data.nodes.length > 1000,
       hideLabelsOnViewport: data.nodes.length > 700,
-      motionBlur: true,
-      motionBlurOpacity: 0.12,
-      textureOnViewport: true,
-      hideEdgesOnViewport: data.nodes.length > 1000,
-      hideLabelsOnViewport: data.nodes.length > 700,
     })
 
     cy.on('tap', 'node', (event) => {
@@ -367,10 +334,6 @@ export function KnowledgeGraph({
       releaseInteraction(120)
     })
 
-    cy.on('dragfree', 'node', () => {
-      releaseInteraction(120)
-    })
-
     cy.on('dragpan', () => {
       setGraphInteraction({
         isGraphInteracting: true,
@@ -406,7 +369,6 @@ export function KnowledgeGraph({
       cyRef.current = null
     }
   }, [layoutMode, setGraphInteraction])
-  }, [layoutMode, setGraphInteraction])
 
   useEffect(() => {
     const cy = cyRef.current
@@ -414,10 +376,6 @@ export function KnowledgeGraph({
     if (!cy) {
       return
     }
-
-    const prevSize = previousDataSizeRef.current
-    const nextSize = data.nodes.length
-    const incremental = nextSize > prevSize
 
     const prevSize = previousDataSizeRef.current
     const nextSize = data.nodes.length
@@ -532,8 +490,6 @@ export function KnowledgeGraph({
     cy.batch(() => {
       cy.nodes().forEach((node) => {
         const nodeId = node.id()
-
-        node.data('degree', node.connectedEdges().length)
 
         node.data('degree', node.connectedEdges().length)
 

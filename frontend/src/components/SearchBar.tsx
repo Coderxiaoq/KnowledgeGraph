@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react'
 import { rankSearchResults } from '../graph/preferenceEngine'
 import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/data'
-import { useMemo, useState } from 'react'
-import { rankSearchResults } from '../graph/preferenceEngine'
-import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/data'
 import { getGraphByPanel } from '../services/homeService'
-import { searchNodes } from '../services/graphApi'
-import { searchNodes } from '../services/graphApi'
+import { searchNodes, setFilters, clearFilters, addFilter, removeFilter } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
 import { useAppStore } from '../store/useAppStore'
 import { usePathStore } from '../store/pathStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
-import type { GraphNode as RawGraphNode } from '../types/graphApi'
+import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
+
+const FIELD_OPTIONS: { label: string; field: string; op: FilterOperator; placeholder: string }[] = [
+  { label: '薪资范围', field: 'salary', op: 'salary_in', placeholder: '如 20k-40k 或 20k+' },
+  { label: '城市/地点', field: 'location', op: 'contains', placeholder: '如 北京' },
+  { label: '节点名称', field: 'name', op: 'contains', placeholder: '关键词' },
+]
 
 export function SearchBar() {
   const searchKeyword = useGraphStore((state) => state.searchKeyword)
@@ -33,26 +35,25 @@ export function SearchBar() {
   const pathContextNodes = useGraphStore((state) => state.pathContextNodes)
   const processedColumns = useGraphStore((state) => state.processedColumns)
   const searchResults = useGraphStore((state) => state.searchResults)
-  const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
-  const recalculateRecommendations = useGraphStore(
-    (state) => state.recalculateRecommendations,
-  )
-  const likedNodeIds = useGraphStore((state) => state.likedNodeIds)
-  const dislikedNodeIds = useGraphStore((state) => state.dislikedNodeIds)
-  const selectedNodes = useGraphStore((state) => state.selectedNodes)
-  const focusedNode = useGraphStore((state) => state.focusedNode)
-  const hoveredNode = useGraphStore((state) => state.hoveredNode)
-  const currentFocusColumn = useGraphStore((state) => state.currentFocusColumn)
-  const pathContextNodes = useGraphStore((state) => state.pathContextNodes)
-  const processedColumns = useGraphStore((state) => state.processedColumns)
-  const searchResults = useGraphStore((state) => state.searchResults)
+  const backendFilterState = useGraphStore((state) => state.backendFilterState)
+  const setBackendFilterState = useGraphStore((state) => state.setBackendFilterState)
+  const bumpFilterRefreshKey = useGraphStore((state) => state.bumpFilterRefreshKey)
+
   const [isSearching, setIsSearching] = useState(false)
   const [searchCandidate, setSearchCandidate] = useState<SelectedGraphNode | null>(null)
   const [showMissingToast, setShowMissingToast] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [selectedField, setSelectedField] = useState(FIELD_OPTIONS[0])
+  const [filterValue, setFilterValue] = useState('')
+  const [filterMode, setFilterMode] = useState<FilterMode>('negative')
+  const [isApplying, setIsApplying] = useState(false)
+
   const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
   const requestNavigation = usePathStore((state) => state.requestNavigation)
   const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
+
+  const activeNodeFilters = backendFilterState.node_filters
 
   const rankedResults = useMemo(() => {
     return rankSearchResults(searchResults, {
@@ -95,12 +96,7 @@ export function SearchBar() {
     setShowMissingToast(false)
 
     try {
-      const graph = await searchNodes({
-        keyword,
-      })
-      const graph = await searchNodes({
-        keyword,
-      })
+      const graph = await searchNodes({ keyword })
 
       const results = mapSearchResults(graph.nodes)
       const focusNode = results[0]
@@ -118,6 +114,52 @@ export function SearchBar() {
       setShowMissingToast(false)
     } finally {
       setIsSearching(false)
+    }
+  }
+
+  async function handleAddFilter() {
+    const value = filterValue.trim()
+    if (!value) return
+
+    setIsApplying(true)
+    try {
+      const option: GraphFilter = {
+        target: 'node',
+        field: selectedField.field,
+        value,
+        op: selectedField.op,
+        mode: filterMode,
+      }
+      const newState = await addFilter(option)
+      setBackendFilterState(newState)
+      setFilterValue('')
+      bumpFilterRefreshKey()
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  async function handleRemoveFilter(filter: GraphFilter) {
+    setIsApplying(true)
+    try {
+      const newState = await removeFilter(filter)
+      setBackendFilterState(newState)
+      bumpFilterRefreshKey()
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  async function handleClearFilters() {
+    setIsApplying(true)
+    try {
+      const newState = await clearFilters()
+      setBackendFilterState(newState)
+      setHighlightedNodes({ skill: [], job: [], company: [] })
+      setHiddenNodes({ skill: [], job: [], company: [] })
+      bumpFilterRefreshKey()
+    } finally {
+      setIsApplying(false)
     }
   }
 
@@ -148,6 +190,7 @@ export function SearchBar() {
           <input
             value={searchKeyword}
             onChange={(event) => setSearchKeyword(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter') void handleSearch() }}
             placeholder="Search node name..."
             className="h-11 flex-1 rounded-2xl border border-ink-900/10 bg-white px-4 text-sm text-ink-900 outline-none transition focus:border-mint-500"
           />
@@ -163,18 +206,21 @@ export function SearchBar() {
 
           <button
             type="button"
-            className="h-11 rounded-2xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 md:w-auto"
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            className={`h-11 rounded-2xl px-4 text-sm font-semibold transition md:w-auto ${
+              isFilterOpen || activeNodeFilters.length > 0
+                ? 'bg-mint-500 text-white'
+                : 'bg-ink-950 text-white hover:bg-ink-900'
+            }`}
+            title="过滤器"
           >
-            +
+            {activeNodeFilters.length > 0 ? `筛选 (${activeNodeFilters.length})` : '+'}
           </button>
 
           <button
             type="button"
             onClick={() => {
-              if (!searchCandidate) {
-                return
-              }
-
+              if (!searchCandidate) return
               activateSearchTask(searchCandidate)
             }}
             disabled={!searchCandidate}
@@ -192,6 +238,100 @@ export function SearchBar() {
         {showMissingToast ? (
           <div className="w-fit rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
             当前结点不存在
+          </div>
+        ) : null}
+
+        {isFilterOpen ? (
+          <div className="rounded-2xl border border-ink-900/8 bg-white/90 p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-500">节点过滤器</p>
+              {activeNodeFilters.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => void handleClearFilters()}
+                  disabled={isApplying}
+                  className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                >
+                  清空全部
+                </button>
+              ) : null}
+            </div>
+
+            {activeNodeFilters.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {activeNodeFilters.map((filter, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+                      filter.mode === 'positive'
+                        ? 'border-mint-200 bg-mint-50 text-mint-700'
+                        : 'border-rose-200 bg-rose-50 text-rose-700'
+                    }`}
+                  >
+                    <span>{filter.field}:{String(filter.value)}</span>
+                    <span className="opacity-60">({filter.mode === 'positive' ? '保留' : '排除'})</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveFilter(filter)}
+                      disabled={isApplying}
+                      className="ml-1 rounded-full leading-none opacity-60 hover:opacity-100"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-2 md:flex-row md:items-end">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">字段</label>
+                <select
+                  value={selectedField.field}
+                  onChange={(e) => {
+                    const found = FIELD_OPTIONS.find((o) => o.field === e.target.value)
+                    if (found) setSelectedField(found)
+                  }}
+                  className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+                >
+                  {FIELD_OPTIONS.map((o) => (
+                    <option key={o.field} value={o.field}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-1 flex-col gap-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">值</label>
+                <input
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void handleAddFilter() }}
+                  placeholder={selectedField.placeholder}
+                  className="h-9 flex-1 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">模式</label>
+                <select
+                  value={filterMode}
+                  onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+                  className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+                >
+                  <option value="negative">排除匹配</option>
+                  <option value="positive">仅保留匹配</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleAddFilter()}
+                disabled={isApplying || !filterValue.trim()}
+                className="h-9 rounded-xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-50"
+              >
+                添加
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -218,7 +358,6 @@ export function SearchBar() {
 }
 
 function resolvePanelByLabel(label: string): GraphPanelId {
-  return resolvePanelByLabelFromGraph(label) ?? 'job'
   return resolvePanelByLabelFromGraph(label) ?? 'job'
 }
 
@@ -259,3 +398,4 @@ function buildHiddenMap(results: SelectedGraphNode[]) {
     },
   )
 }
+

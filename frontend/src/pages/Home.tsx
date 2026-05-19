@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 import { PathBar } from '../components/PathBar'
-import { PathBar } from '../components/PathBar'
 import { SearchBar } from '../components/SearchBar'
 import { GraphPanel } from '../components/graph/GraphPanel'
 import { AppShell } from '../components/layout/AppShell'
@@ -191,7 +190,6 @@ export function Home() {
           </motion.div>
         </section>
       </main>
-      <PathBar />
       <PathBar />
     </AppShell>
   )
