@@ -241,8 +241,6 @@ export async function recommend2To1(
   })
 
   return {
-    nodes: Array.isArray(response.nodes) ? (response.nodes as RecommendResponse['nodes']) : [],
-    edges: Array.isArray(response.edges) ? (response.edges as RecommendResponse['edges']) : [],
     chains: Array.isArray(response.chains)
       ? (response.chains as RecommendResponse['chains'])
       : [],

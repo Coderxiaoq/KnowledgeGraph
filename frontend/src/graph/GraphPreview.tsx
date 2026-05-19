@@ -578,7 +578,7 @@ export const GraphPreview = memo(function GraphPreview({
           const nextNode = toSelectedGraphNode(panelId, node)
           void (async () => {
             await cycleNodePreference(nextNode)
-            await syncPreferenceState({ hideDisliked: focusedPanel !== null })
+            await syncPreferenceState({ hideDisliked: true })
           })()
         }}
         onNodeHover={handleNodeHover}

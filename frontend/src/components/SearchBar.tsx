@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react'
 import { rankSearchResults } from '../graph/preferenceEngine'
 import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/data'
 import { getGraphByPanel } from '../services/homeService'
-import { searchNodes, setFilters, clearFilters, addFilter, removeFilter } from '../services/graphApi'
+import { searchNodes, clearFilters, addFilter, removeFilter, recommend2To1 } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
-import { useAppStore } from '../store/useAppStore'
 import { usePathStore } from '../store/pathStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
@@ -22,10 +21,6 @@ export function SearchBar() {
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
   const setHiddenNodes = useGraphStore((state) => state.setHiddenNodes)
   const setFocusedNode = useGraphStore((state) => state.setFocusedNode)
-  const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
-  const recalculateRecommendations = useGraphStore(
-    (state) => state.recalculateRecommendations,
-  )
   const likedNodeIds = useGraphStore((state) => state.likedNodeIds)
   const dislikedNodeIds = useGraphStore((state) => state.dislikedNodeIds)
   const selectedNodes = useGraphStore((state) => state.selectedNodes)
@@ -38,9 +33,12 @@ export function SearchBar() {
   const backendFilterState = useGraphStore((state) => state.backendFilterState)
   const setBackendFilterState = useGraphStore((state) => state.setBackendFilterState)
   const bumpFilterRefreshKey = useGraphStore((state) => state.bumpFilterRefreshKey)
+  const likedNodes = useGraphStore((state) => state.likedNodes)
+  const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
+  const setRecommendChains = useGraphStore((state) => state.setRecommendChains)
 
   const [isSearching, setIsSearching] = useState(false)
-  const [searchCandidate, setSearchCandidate] = useState<SelectedGraphNode | null>(null)
+  const [isRecommending, setIsRecommending] = useState(false)
   const [showMissingToast, setShowMissingToast] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedField, setSelectedField] = useState(FIELD_OPTIONS[0])
@@ -48,9 +46,15 @@ export function SearchBar() {
   const [filterMode, setFilterMode] = useState<FilterMode>(FIELD_OPTIONS[0].defaultMode)
   const [isApplying, setIsApplying] = useState(false)
 
-  const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
-  const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
-  const requestNavigation = usePathStore((state) => state.requestNavigation)
+  const preferenceAreas = useMemo(() => {
+    const areas = new Set<GraphPanelId>()
+    for (const node of likedNodes) areas.add(node.graphArea)
+    for (const node of dislikedNodes) areas.add(node.graphArea)
+    return areas
+  }, [likedNodes, dislikedNodes])
+
+  const canActivateRecommend = likedNodes.length > 0 && preferenceAreas.size >= 2
+
   const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
 
   const activeNodeFilters = [
@@ -90,7 +94,6 @@ export function SearchBar() {
     const keyword = searchKeyword.trim()
 
     if (!keyword) {
-      setSearchCandidate(null)
       setShowMissingToast(false)
       setHighlightedNodes({ skill: [], job: [], company: [] })
       setHiddenNodes({ skill: [], job: [], company: [] })
@@ -109,7 +112,6 @@ export function SearchBar() {
       setSearchResults(results)
 
       if (!focusNode) {
-        setSearchCandidate(null)
         setFocusedNode(null)
         setShowMissingToast(true)
         setHighlightedNodes({ skill: [], job: [], company: [] })
@@ -117,7 +119,6 @@ export function SearchBar() {
         return
       }
 
-      setSearchCandidate(focusNode)
       setShowMissingToast(false)
       setHighlightedNodes(buildHighlightMap(results))
       setHiddenNodes({ skill: [], job: [], company: [] })
@@ -172,23 +173,53 @@ export function SearchBar() {
     }
   }
 
-  function activateSearchTask(node: SelectedGraphNode) {
-    setPathPanelOpen(true)
-    setFocusedNode(node)
-    setCurrentFocusColumn(node.graphArea)
-    setFocusedPanel(node.graphArea)
-    setActiveNodeId(node.graphArea, node.id)
-    setHighlightedNodes(buildHighlightMap([node]))
-    setHiddenNodes(buildHiddenMap([node]))
-    recalculateRecommendations([node], { hideDisliked: true })
-    requestNavigation({
-      nodeId: node.id,
-      panelId: node.graphArea,
-    })
+  async function handleRecommendClick() {
+    if (!canActivateRecommend) return
+
+    const hasSkill = preferenceAreas.has('skill')
+    const hasJob = preferenceAreas.has('job')
+    const hasCompany = preferenceAreas.has('company')
+
+    let type: 'skill_to_role' | 'role_to_company' | 'company_to_role'
+    let primaryArea: GraphPanelId
+    let secondaryArea: GraphPanelId
+
+    if (hasSkill && hasCompany) {
+      type = 'skill_to_role'
+      primaryArea = 'skill'
+      secondaryArea = 'company'
+    } else if (hasSkill && hasJob) {
+      type = 'role_to_company'
+      primaryArea = 'job'
+      secondaryArea = 'skill'
+    } else {
+      type = 'company_to_role'
+      primaryArea = 'company'
+      secondaryArea = 'job'
+    }
+
+    const primaryPos = likedNodes.filter((n) => n.graphArea === primaryArea).map((n) => n.id)
+    const primaryNeg = dislikedNodes.filter((n) => n.graphArea === primaryArea).map((n) => n.id)
+    const secondaryPos = likedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
+    const secondaryNeg = dislikedNodes.filter((n) => n.graphArea === secondaryArea).map((n) => n.id)
+
+    setIsRecommending(true)
+    try {
+      const result = await recommend2To1({
+        type,
+        primary_pos_list: primaryPos,
+        primary_neg_list: primaryNeg,
+        secondary_pos_list: secondaryPos,
+        secondary_neg_list: secondaryNeg,
+      })
+      setRecommendChains(result.chains ?? [])
+      setPathPanelOpen(true)
+    } finally {
+      setIsRecommending(false)
+    }
   }
 
-  function focusSearchResult(node: SelectedGraphNode) {
-    setSearchCandidate(node)
+  function focusSearchResult(_node: SelectedGraphNode) {
     setShowMissingToast(false)
   }
 
@@ -228,19 +259,17 @@ export function SearchBar() {
 
           <button
             type="button"
-            onClick={() => {
-              if (!searchCandidate) return
-              activateSearchTask(searchCandidate)
-            }}
-            disabled={!searchCandidate}
-            aria-label="Open inference task"
+            onClick={() => void handleRecommendClick()}
+            disabled={!canActivateRecommend || isRecommending}
+            aria-label="Open recommendation chains"
+            title={canActivateRecommend ? '生成推荐链路' : '请在至少两个图谱中设置节点偏好（至少一个正向）'}
             className={`h-11 rounded-2xl px-4 text-sm font-semibold transition md:w-auto ${
-              searchCandidate
+              canActivateRecommend
                 ? 'bg-ink-950 text-white hover:bg-ink-900'
                 : 'cursor-not-allowed bg-slate-200 text-slate-400'
             }`}
           >
-            -&gt;
+            {isRecommending ? '…' : '->'}
           </button>
         </div>
 

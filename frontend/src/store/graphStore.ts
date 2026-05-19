@@ -6,6 +6,7 @@ import {
 } from '../graph/preferenceEngine'
 import { getGraphByPanel } from '../services/homeService'
 import type {
+  ComboChain,
   CytoscapeEdge,
   FilterState,
   GraphFilterState,
@@ -51,6 +52,7 @@ export type GraphStoreState = {
   recommendationScores: Record<string, RecommendationScore>
   currentPath: GraphPath | null
   currentExpandGraph: GraphResponse | null
+  recommendChains: ComboChain[]
 }
 
 export type GraphStoreActions = {
@@ -98,6 +100,7 @@ export type GraphStoreActions = {
   addRecommendedNode: (node: SelectedGraphNode) => void
   removeRecommendedNode: (nodeId: string) => void
   updateCurrentPath: (path: GraphPath | null) => void
+  setRecommendChains: (chains: ComboChain[]) => void
   clearSelection: () => void
   clearPreferences: () => void
   resetGraphState: () => void
@@ -162,6 +165,7 @@ const initialGraphState: GraphStoreState = {
   recommendationScores: {},
   currentPath: null,
   currentExpandGraph: null,
+  recommendChains: [],
 }
 
 function isSameNode(left: SelectedGraphNode, right: SelectedGraphNode) {
@@ -421,6 +425,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
     const isPositive = state.likedNodeIds.includes(node.id)
     const isNegative = state.dislikedNodeIds.includes(node.id)
 
+    // neutral → positive → negative → neutral
     if (!isPositive && !isNegative) {
       await useGraphStore.getState().likeNode(node)
       return 'positive'
@@ -431,7 +436,8 @@ export const useGraphStore = create<GraphStore>((set) => ({
       return 'negative'
     }
 
-    await useGraphStore.getState().likeNode(node)
+    // isNegative → neutral: clear preference entirely
+    await useGraphStore.getState().undislikeNode(node.id)
     return 'positive'
   },
 
@@ -540,6 +546,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
     })),
 
   updateCurrentPath: (path) => set({ currentPath: path }),
+  setRecommendChains: (chains) => set({ recommendChains: chains }),
 
   clearSelection: () =>
     set({

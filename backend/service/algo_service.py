@@ -635,24 +635,24 @@ class CareerLinkageLogic:
         # 单链条候选可能很多，docs 里完整返回会非常重；这里只保留一小段预览。
         single_chain_preview_limit = min(len(ranked_chains), max(limit * 3, 10))
 
-        nodes_dict: Dict[str, Dict[str, Any]] = {}
-        edges_list: list[Dict[str, Any]] = []
-        edge_seen = set()
+        # 将 ranked_chains 按 combo 组键分桶，注入到对应 combo_chain 的 member_chains 字段
+        single_by_group: Dict[tuple, list] = {}
+        for chain in ranked_chains:
+            key = cls._combo_group_key(recommend_type, chain)
+            single_by_group.setdefault(key, []).append({
+                "score": chain["score"],
+                "base_score": chain["base_score"],
+                "nodes": chain["nodes"],  # dict: {company/role/skill: node_dict}
+                "edges": chain["edges"],
+                "reason": chain["reason"],
+            })
 
-        for chain in combo_chains:
-            for node in chain["nodes"]:
-                if node["id"] and node["id"] not in nodes_dict:
-                    nodes_dict[node["id"]] = node
-
-            for edge in chain["edges"]:
-                edge_key = (edge["source"], edge["target"], edge["relation"])
-                if edge_key not in edge_seen:
-                    edge_seen.add(edge_key)
-                    edges_list.append(edge)
+        for combo in combo_chains:
+            left = combo["group_key"]["left_id"]
+            right = combo["group_key"]["right_id"]
+            combo["member_chains"] = single_by_group.get((left, right), [])
 
         return {
-            "nodes": list(nodes_dict.values()),
-            "edges": edges_list,
             "chains": combo_chains,
             "single_chains": ranked_chains[:single_chain_preview_limit],
         }

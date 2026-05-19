@@ -12,6 +12,7 @@ import { useGraphStore } from '../store/graphStore'
 import { resolvePathNodePanel, usePathStore } from '../store/pathStore'
 import { useAppStore } from '../store/useAppStore'
 import type { GraphPathEdge, GraphPathNode, GraphPanelId } from '../types/graph'
+import type { ComboChain } from '../types/graphApi'
 
 const FLOATING_WINDOW_WIDTH = 860
 const FLOATING_WINDOW_MARGIN = 20
@@ -92,6 +93,8 @@ export const PathBar = memo(function PathBar() {
   const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
   const clearNodePreference = useGraphStore((state) => state.clearNodePreference)
   const clearPreferences = useGraphStore((state) => state.clearPreferences)
+  const recommendChains = useGraphStore((state) => state.recommendChains)
+  const setRecommendChains = useGraphStore((state) => state.setRecommendChains)
 
   const [position, setPosition] = useState(DEFAULT_POSITION)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
@@ -207,7 +210,9 @@ export const PathBar = memo(function PathBar() {
     }
   }, [currentPath, isPathPanelOpen, panels, position])
 
-  if ((!currentPath || !isPathPanelOpen) && !isPreferencePanelOpen) {
+  const hasRecommendChains = recommendChains.length > 0 && isPathPanelOpen
+
+  if ((!currentPath || !isPathPanelOpen) && !isPreferencePanelOpen && !hasRecommendChains) {
     return null
   }
 
@@ -251,6 +256,7 @@ export const PathBar = memo(function PathBar() {
     setActiveNodeId('company', '')
     setHoveredPathNodeId(null)
     setHoveredEdgeId(null)
+    setRecommendChains([])
   }
 
   function handleDragStart(event: ReactPointerEvent<HTMLDivElement>) {
@@ -364,7 +370,12 @@ export const PathBar = memo(function PathBar() {
         {isPathPanelOpen ? (
           <div className="relative px-4 py-4">
           <AnimatePresence mode="wait">
-            {panels.some((panel) => panel.nodes.length > 0) ? (
+            {hasRecommendChains ? (
+              <RecommendChainsView
+                key="recommend-chains"
+                chains={recommendChains}
+              />
+            ) : panels.some((panel) => panel.nodes.length > 0) ? (
               <motion.div
                 key="knowledge-lane"
                 initial={{ opacity: 0 }}
@@ -602,6 +613,156 @@ function EmptyColumn({ label }: { label: string }) {
     </div>
   )
 }
+
+// ─── Recommend chains view ────────────────────────────────────────────────────
+
+const NODE_TYPE_STYLES = {
+  skill: {
+    circle: 'bg-emerald-50 border-emerald-200',
+    text: 'text-emerald-800',
+    label: 'text-emerald-500',
+  },
+  role: {
+    circle: 'bg-sky-50 border-sky-200',
+    text: 'text-sky-800',
+    label: 'text-sky-400',
+  },
+  company: {
+    circle: 'bg-amber-50 border-amber-200',
+    text: 'text-amber-800',
+    label: 'text-amber-500',
+  },
+} as const
+
+type ChainNodeType = keyof typeof NODE_TYPE_STYLES
+
+function ChainNodeBubble({ label, type }: { label: string; type: ChainNodeType }) {
+  const s = NODE_TYPE_STYLES[type]
+  const short = label.length > 7 ? `${label.slice(0, 6)}…` : label
+  return (
+    <div className="flex flex-1 flex-col items-center gap-0.5 min-w-0">
+      <div
+        className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border-2 ${s.circle}`}
+      >
+        <span className={`px-1 text-center text-[9px] font-semibold leading-tight ${s.text}`}>
+          {short}
+        </span>
+      </div>
+      <span className={`text-[7px] font-bold uppercase tracking-wider ${s.label}`}>{type}</span>
+    </div>
+  )
+}
+
+function ChainArrow() {
+  return (
+    <svg width="20" height="14" viewBox="0 0 20 14" fill="none" className="flex-shrink-0 self-center">
+      <path d="M1 7h16M13 2l5 5-5 5" stroke="rgba(148,163,184,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ChainCard({ chain, rank, isTop }: { chain: ComboChain; rank: number; isTop: boolean }) {
+  const member = chain.member_chains?.[0]
+  const nodes = member?.nodes
+
+  return (
+    <div
+      className={`rounded-2xl border p-3 ${
+        isTop
+          ? 'border-emerald-100 bg-[linear-gradient(135deg,rgba(220,252,231,0.6),rgba(255,255,255,0.95))]'
+          : 'border-rose-100 bg-[linear-gradient(135deg,rgba(254,242,242,0.6),rgba(255,255,255,0.95))]'
+      }`}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <div
+          className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${
+            isTop ? 'bg-emerald-500' : 'bg-rose-400'
+          }`}
+        >
+          {rank}
+        </div>
+        <span
+          className={`text-[11px] font-bold tabular-nums ${isTop ? 'text-emerald-700' : 'text-rose-600'}`}
+        >
+          {chain.score.toFixed(3)}
+        </span>
+        {chain.reason ? (
+          <span className="min-w-0 flex-1 truncate text-[9px] text-slate-400">{chain.reason}</span>
+        ) : null}
+      </div>
+
+      {nodes ? (
+        <div className="flex items-center gap-1">
+          <ChainNodeBubble label={nodes.skill.label} type="skill" />
+          <ChainArrow />
+          <ChainNodeBubble label={nodes.role.label} type="role" />
+          <ChainArrow />
+          <ChainNodeBubble label={nodes.company.label} type="company" />
+        </div>
+      ) : (
+        <p className="text-[10px] text-slate-400">无法获取链路详情</p>
+      )}
+    </div>
+  )
+}
+
+function RecommendChainsView({ chains }: { chains: ComboChain[] }) {
+  const sorted = useMemo(
+    () => [...chains].sort((a, b) => b.score - a.score),
+    [chains],
+  )
+  const topChains = sorted.slice(0, 7)
+  const bottomChains = sorted.length > 7 ? sorted.slice(-3) : []
+
+  return (
+    <motion.div
+      key="recommend-chains"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      className="space-y-4"
+    >
+      {topChains.length > 0 ? (
+        <div>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-600">
+            Top {topChains.length} 高分链路
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {topChains.map((chain, i) => (
+              <ChainCard key={i} chain={chain} rank={i + 1} isTop={true} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {bottomChains.length > 0 ? (
+        <div>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-rose-500">
+            Bottom {bottomChains.length} 低分链路
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {bottomChains.map((chain, i) => (
+              <ChainCard
+                key={i}
+                chain={chain}
+                rank={sorted.length - bottomChains.length + i + 1}
+                isTop={false}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {topChains.length === 0 ? (
+        <div className="flex min-h-24 items-center justify-center rounded-[22px] border border-dashed border-ink-900/10 bg-white/55 text-sm text-slate-500">
+          暂无推荐链路数据
+        </div>
+      ) : null}
+    </motion.div>
+  )
+}
+
+// ─── Existing components ───────────────────────────────────────────────────────
 
 function EmptyState() {
   return (

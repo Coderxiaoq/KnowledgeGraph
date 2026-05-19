@@ -116,21 +116,45 @@ export type InferencePath = {
   summary?: string
 }
 
+export type ChainNode = {
+  id: string
+  label: string
+  properties: GraphProperties
+}
+
+export type ChainEdge = {
+  source: string
+  target: string
+  relation: string
+  properties?: GraphProperties
+}
+
+export type SingleChain = {
+  score: number
+  base_score?: number
+  reason?: string
+  nodes: { company: ChainNode; role: ChainNode; skill: ChainNode }
+  edges: ChainEdge[]
+}
+
+export type ComboChain = {
+  score: number
+  total_score?: number
+  base_score?: number
+  preference_score?: number
+  reason?: string
+  nodes: ChainNode[]
+  edges: ChainEdge[]
+  member_chains?: SingleChain[]
+  matched_positive_ids?: string[]
+  matched_negative_ids?: string[]
+}
+
 export type RecommendResponse = {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
-  chains?: Array<{
-    score: number
-    reason?: string
-    nodes: GraphNode[]
-    edges: GraphEdge[]
-  }>
-  single_chains?: Array<{
-    score: number
-    reason?: string
-    nodes: GraphNode[]
-    edges: GraphEdge[]
-  }>
+  nodes?: GraphNode[]
+  edges?: GraphEdge[]
+  chains?: ComboChain[]
+  single_chains?: SingleChain[]
   currentPath: InferencePath | null
 }
 
