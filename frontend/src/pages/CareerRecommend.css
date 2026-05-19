@@ -1,0 +1,284 @@
+.career-recommend-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 24px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1890ff;
+  margin: 0 0 8px 0;
+}
+
+.page-header p {
+  font-size: 16px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.recommend-container {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.section-card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 16px 0;
+}
+
+.skill-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  transition: border-color 0.3s;
+}
+
+.skill-search-input:focus {
+  outline: none;
+  border-color: #1890ff;
+}
+
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.skill-chip {
+  padding: 6px 14px;
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  background: white;
+  font-size: 13px;
+  color: #595959;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.skill-chip:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.skill-chip.selected {
+  background: #1890ff;
+  border-color: #1890ff;
+  color: white;
+}
+
+.selected-skills {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.selected-label {
+  display: block;
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 8px;
+}
+
+.selected-skill-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1890ff;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  gap: 6px;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #1890ff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.salary-inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.salary-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.salary-input-group label {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.salary-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.salary-input:focus {
+  outline: none;
+  border-color: #1890ff;
+}
+
+.unit {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-left: 4px;
+}
+
+.range-separator {
+  font-size: 16px;
+  color: #d9d9d9;
+  margin-bottom: 8px;
+}
+
+.recommend-button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.recommend-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.recommend-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.result-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 600px;
+}
+
+.result-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.result-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 4px 0;
+}
+
+.result-header p {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recommendation-item {
+  cursor: pointer;
+}
+
+.probability-detail {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 2px solid #1890ff;
+}
+
+.probability-detail h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff;
+  margin: 0 0 12px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  color: #595959;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .recommend-container {
+    grid-template-columns: 1fr;
+  }
+}

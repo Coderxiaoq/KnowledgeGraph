@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from core.connect import db, get_db_session
-from api import graph_api
+from api import graph_api, recommend_api
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(graph_api.router, prefix="/api/graph", tags=["知识图谱核心接口"])
+app.include_router(recommend_api.router, prefix="/api/recommend", tags=["智能推荐接口"])
 
 @app.get("/")
 def read_root():
