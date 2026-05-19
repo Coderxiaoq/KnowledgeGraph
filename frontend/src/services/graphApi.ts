@@ -7,12 +7,14 @@ import type {
   GraphFilterState,
   GraphNode,
   GraphResponse,
+  LegacyRecommend2To1Params,
   Recommend2To1Params,
   RecommendQuery,
   RecommendResponse,
   RecommendType,
   SearchNodesParams,
   SearchNodesResponse,
+  RecommendPreferencePayload,
 } from '../types/graphApi'
 
 function normalizeApiBaseUrl(rawBaseUrl: string | undefined) {
@@ -89,6 +91,11 @@ async function unwrapData<T>(config: AxiosRequestConfig): Promise<T> {
   return response.data.data
 }
 
+async function unwrapDirect<T>(config: AxiosRequestConfig): Promise<T> {
+  const response = await graphApi.request<T>(config)
+  return response.data
+}
+
 function withOptionalSignal(
   signal?: AbortSignal,
 ): Pick<AxiosRequestConfig, 'signal'> | Record<string, never> {
@@ -126,9 +133,25 @@ function isStrictRecommendQuery(params: Recommend2To1Params): params is Recommen
   return 'type' in params && 'id1' in params && 'id2' in params
 }
 
+function isPreferenceRecommendPayload(
+  params: Recommend2To1Params,
+): params is RecommendPreferencePayload {
+  return 'primary_pos_list' in params && 'secondary_pos_list' in params
+}
+
+function isLegacyRecommendParams(
+  params: Recommend2To1Params,
+): params is LegacyRecommend2To1Params {
+  return 'selected' in params && 'targetArea' in params
+}
+
 function deriveRecommendQuery(params: Recommend2To1Params): RecommendQuery {
   if (isStrictRecommendQuery(params)) {
     return params
+  }
+
+  if (!isLegacyRecommendParams(params)) {
+    throw new GraphApiError('Invalid recommend/2to1 params', 400)
   }
 
   const { selected, targetArea, limit, signal } = params
@@ -289,6 +312,34 @@ export async function getNodesByCategory(
 export async function recommend2To1(
   params: Recommend2To1Params,
 ): Promise<RecommendResponse> {
+  if (isPreferenceRecommendPayload(params)) {
+    const response = await unwrapData<Record<string, unknown>>({
+      method: 'POST',
+      url: '/recommend/2to1',
+      data: {
+        type: params.type,
+        primary_pos_list: params.primary_pos_list,
+        primary_neg_list: params.primary_neg_list,
+        secondary_pos_list: params.secondary_pos_list,
+        secondary_neg_list: params.secondary_neg_list,
+        limit: params.limit,
+      },
+      ...withOptionalSignal(params.signal),
+    })
+
+    return {
+      nodes: Array.isArray(response.nodes) ? (response.nodes as RecommendResponse['nodes']) : [],
+      edges: Array.isArray(response.edges) ? (response.edges as RecommendResponse['edges']) : [],
+      chains: Array.isArray(response.chains)
+        ? (response.chains as RecommendResponse['chains'])
+        : [],
+      single_chains: Array.isArray(response.single_chains)
+        ? (response.single_chains as RecommendResponse['single_chains'])
+        : [],
+      currentPath: null,
+    }
+  }
+
   const query = deriveRecommendQuery(params)
 
   return unwrapData<RecommendResponse>({
@@ -307,7 +358,7 @@ export async function recommend2To1(
 export async function getFilters(
   signal?: AbortSignal,
 ): Promise<GraphFilterState> {
-  return unwrapData<GraphFilterState>({
+  return unwrapDirect<GraphFilterState>({
     method: 'GET',
     url: '/filter',
     ...withOptionalSignal(signal),
@@ -318,7 +369,7 @@ export async function setFilters(
   filters: GraphFilterState,
   signal?: AbortSignal,
 ): Promise<GraphFilterState> {
-  return unwrapData<GraphFilterState>({
+  return unwrapDirect<GraphFilterState>({
     method: 'POST',
     url: '/filter',
     data: filters,
@@ -330,7 +381,7 @@ export async function addFilter(
   filter: GraphFilter,
   signal?: AbortSignal,
 ): Promise<GraphFilterState> {
-  return unwrapData<GraphFilterState>({
+  return unwrapDirect<GraphFilterState>({
     method: 'POST',
     url: '/filter/add',
     data: filter,
@@ -342,7 +393,7 @@ export async function removeFilter(
   filter: GraphFilter,
   signal?: AbortSignal,
 ): Promise<GraphFilterState> {
-  return unwrapData<GraphFilterState>({
+  return unwrapDirect<GraphFilterState>({
     method: 'POST',
     url: '/filter/remove',
     data: filter,
@@ -353,7 +404,7 @@ export async function removeFilter(
 export async function clearFilters(
   signal?: AbortSignal,
 ): Promise<GraphFilterState> {
-  return unwrapData<GraphFilterState>({
+  return unwrapDirect<GraphFilterState>({
     method: 'POST',
     url: '/filter/clear',
     ...withOptionalSignal(signal),

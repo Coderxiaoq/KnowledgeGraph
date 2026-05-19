@@ -54,6 +54,16 @@ export function setGraphByPanel(panelId: GraphPanelId, graph: GraphData) {
   graphCache.set(panelId, graph)
 }
 
+export function setGraphsByPanels(graphs: Partial<Record<GraphPanelId, GraphData>>) {
+  Object.entries(graphs).forEach(([panelId, graph]) => {
+    if (!graph) {
+      return
+    }
+
+    graphCache.set(panelId as GraphPanelId, graph)
+  })
+}
+
 export function getPanelGraphLoader(panelId: GraphPanelId) {
   if (panelId === 'skill') {
     return getSkillGraph

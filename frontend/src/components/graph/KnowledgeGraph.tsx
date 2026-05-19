@@ -23,6 +23,7 @@ export type KnowledgeGraphProps = {
   wheelSensitivity?: number
   onNodeClick?: (node: KnowledgeGraphNodeEvent) => void
   onNodeHover?: (node: KnowledgeGraphNodeEvent | null) => void
+  onNodeRightClick?: (node: KnowledgeGraphNodeEvent) => void
 }
 
 const MIN_ZOOM = 0.5
@@ -74,6 +75,7 @@ export function KnowledgeGraph({
   wheelSensitivity = 0.009,
   onNodeClick,
   onNodeHover,
+  onNodeRightClick,
 }: KnowledgeGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const cyRef = useRef<Core | null>(null)
@@ -298,6 +300,11 @@ export function KnowledgeGraph({
 
     cy.on('tap', 'node', (event) => {
       onNodeClickRef.current?.(toNodeEvent(event.target))
+    })
+
+    cy.on('cxttap', 'node', (event) => {
+      event.preventDefault()
+      onNodeRightClick?.(toNodeEvent(event.target))
     })
 
     cy.on('dbltap', 'node', (event) => {

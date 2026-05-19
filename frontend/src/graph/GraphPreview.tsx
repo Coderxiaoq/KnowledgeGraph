@@ -43,10 +43,12 @@ export const GraphPreview = memo(function GraphPreview({
   panelId,
   isPanelFocused,
 }: GraphPreviewProps) {
+  const focusedPanel = useAppStore((state) => state.focusedPanel)
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
   const navigationRequest = usePathStore((state) => state.navigationRequest)
   const clearNavigationRequest = usePathStore((state) => state.clearNavigationRequest)
   const isPathPanelOpen = usePathStore((state) => state.isPathPanelOpen)
+  const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
   const selectedNode = useGraphStore((state) => state.selectedNode)
   const selectedNodes = useGraphStore((state) => state.selectedNodes)
   const highlightedNodes = useGraphStore((state) => state.highlightedNodes)
@@ -56,6 +58,7 @@ export const GraphPreview = memo(function GraphPreview({
   const likedNodes = useGraphStore((state) => state.likedNodes)
   const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
   const focusedNode = useGraphStore((state) => state.focusedNode)
+  const setFocusedNode = useGraphStore((state) => state.setFocusedNode)
   const currentFocusColumn = useGraphStore((state) => state.currentFocusColumn)
   const setHoveredNode = useGraphStore((state) => state.setHoveredNode)
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
@@ -65,14 +68,15 @@ export const GraphPreview = memo(function GraphPreview({
   const setCurrentExpandGraph = useGraphStore((state) => state.setCurrentExpandGraph)
   const updateCurrentPath = useGraphStore((state) => state.updateCurrentPath)
   const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
+  const bumpGraphReloadKey = useGraphStore((state) => state.bumpGraphReloadKey)
   const applyColumnContext = useGraphStore((state) => state.applyColumnContext)
-  const likeNode = useGraphStore((state) => state.likeNode)
-  const dislikeNode = useGraphStore((state) => state.dislikeNode)
-  const unlikeNode = useGraphStore((state) => state.unlikeNode)
-  const undislikeNode = useGraphStore((state) => state.undislikeNode)
+  const cycleNodePreference = useGraphStore((state) => state.cycleNodePreference)
   const syncPreferenceState = useGraphStore((state) => state.syncPreferenceState)
   const clearPreferences = useGraphStore((state) => state.clearPreferences)
-  const resetGraphState = useGraphStore((state) => state.resetGraphState)
+  const filterMatchedNodes = useGraphStore((state) => state.filterMatchedNodes)
+  const backendFilterState = useGraphStore((state) => state.backendFilterState)
+  const filterRefreshKey = useGraphStore((state) => state.filterRefreshKey)
+  const graphReloadKey = useGraphStore((state) => state.graphReloadKey)
   const [graphData, setGraphData] = useState<GraphData>(() => getGraphByPanel(panelId))
   const [loading, setLoading] = useState(graphData.nodes.length === 0)
   const [error, setError] = useState<string | null>(null)
@@ -98,6 +102,7 @@ export const GraphPreview = memo(function GraphPreview({
     currentPath: GraphPath | null
     hoveredNodeLabel: string
   } | null>(null)
+  const hasRestoredFocusRef = useRef(false)
 
   const captureFocusSnapshot = useCallback(() => {
     const state = useGraphStore.getState()
@@ -151,19 +156,9 @@ export const GraphPreview = memo(function GraphPreview({
     : false
   const hasPreferences = likedNodes.length > 0 || dislikedNodes.length > 0
 
-  const clearLinkedGraphState = useCallback(() => {
-    focusSessionRef.current += 1
-    focusSnapshotRef.current = null
-    setHoveredNodeLabel('')
-    resetGraphState()
-    setActiveNodeId('skill', '')
-    setActiveNodeId('job', '')
-    setActiveNodeId('company', '')
-  }, [resetGraphState, setActiveNodeId])
-
   useEffect(() => {
     void syncPreferenceState({
-      hideDisliked: true,
+      hideDisliked: false,
     })
   }, [
     activeSelectedNode,
@@ -177,17 +172,62 @@ export const GraphPreview = memo(function GraphPreview({
   useEffect(() => {
     if (!isPanelFocused) {
       focusSessionRef.current += 1
-      focusSnapshotRef.current = null
+      hasRestoredFocusRef.current = false
     }
   }, [isPanelFocused])
 
   useEffect(() => {
-    if (focusedNode !== null) {
+    setHiddenNodes({
+      skill: [],
+      job: [],
+      company: [],
+    })
+    setHighlightedNodes({
+      skill: [],
+      job: [],
+      company: [],
+    })
+  }, [isPanelFocused, panelId, setHiddenNodes, setHighlightedNodes])
+
+  useEffect(() => {
+    if (focusedPanel !== null || !focusSnapshotRef.current || hasRestoredFocusRef.current) {
       return
     }
 
-    clearLinkedGraphState()
-  }, [clearLinkedGraphState, focusedNode])
+    const snapshot = focusSnapshotRef.current
+    setGraphData(snapshot.graphData)
+    setGraphByPanel(panelId, snapshot.graphData)
+
+    useGraphStore.setState((state) => ({
+      selectedNode:
+        state.selectedNode?.graphArea === panelId ? null : state.selectedNode,
+      selectedNodes: {
+        ...state.selectedNodes,
+        [panelId]: [],
+      },
+      highlightedNodes: {
+        ...state.highlightedNodes,
+        [panelId]: [],
+      },
+      hiddenNodes: {
+        ...state.hiddenNodes,
+        [panelId]: [],
+      },
+      activeBridgeEdges: {
+        ...state.activeBridgeEdges,
+        [panelId]: [],
+      },
+      focusedNode:
+        state.focusedNode?.graphArea === panelId ? null : state.focusedNode,
+      currentExpandGraph: panelId === currentFocusColumn ? null : state.currentExpandGraph,
+      currentPath: panelId === currentFocusColumn ? null : state.currentPath,
+    }))
+
+    setHoveredNodeLabel('')
+    setActiveNodeId(panelId, '')
+    hasRestoredFocusRef.current = true
+    void syncPreferenceState({ hideDisliked: false })
+  }, [currentFocusColumn, focusedPanel, panelId, setActiveNodeId, syncPreferenceState])
 
   const loadGraph = useCallback(async () => {
     controllerRef.current?.abort()
@@ -231,7 +271,10 @@ export const GraphPreview = memo(function GraphPreview({
         window.clearTimeout(hoverClearTimerRef.current)
       }
     }
-  }, [loadGraph, loadVersion])
+  }, [filterRefreshKey, loadGraph, loadVersion])
+  useEffect(() => {
+    void loadGraph()
+  }, [graphReloadKey, loadGraph])
 
   const visibleEdgeIds = useMemo(() => {
     const selected = new Set(selectedNodeIds)
@@ -342,71 +385,129 @@ export const GraphPreview = memo(function GraphPreview({
     setCurrentFocusColumn,
   ])
 
-  const resetPanelToInitialState = useCallback(() => {
-    clearLinkedGraphState()
-    const snapshot = focusSnapshotRef.current
-    const initialGraph =
-      snapshot?.graphData ?? initialGraphRef.current ?? getGraphByPanel(panelId)
-
-    setGraphData(initialGraph)
-    setGraphByPanel(panelId, initialGraph)
-    if (snapshot) {
-      useGraphStore.setState({
-        selectedNode: snapshot.selectedNode,
-      })
-      return
-    }
-  }, [clearLinkedGraphState, panelId])
-
   const handleNodeClick = useCallback(
     async (node: SelectedGraphNode) => {
-      if (!isPanelFocused) {
-        return
+      if (!isPanelFocused) return;
+
+      // 判断是否处于过滤器状态
+      const isFilterActive = backendFilterState.node_filters.length > 0;
+      const matchedIds = filterMatchedNodes[panelId] || [];
+      const isSameFocusedNode = focusedNode?.graphArea === panelId && focusedNode.id === node.id;
+
+
+      if (isFilterActive) {
+        if (isSameFocusedNode) {
+          // 再次点击已聚焦结点，恢复三类图谱为过滤后状态（所有过滤后结点可见，无高亮/隐藏）
+          setHighlightedNodes({
+            skill: [],
+            job: [],
+            company: [],
+          });
+          // 只隐藏不在过滤结果中的结点，过滤结果全部可见
+          const allIds = {
+            skill: filterMatchedNodes.skill || [],
+            job: filterMatchedNodes.job || [],
+            company: filterMatchedNodes.company || [],
+          };
+          const allGraphIds = {
+            skill: graphData.nodes.map(n => n.data.id),
+            job: getGraphByPanel('job').nodes.map(n => n.data.id),
+            company: getGraphByPanel('company').nodes.map(n => n.data.id),
+          };
+          setHiddenNodes({
+            skill: allGraphIds.skill.filter(id => !allIds.skill.includes(id)),
+            job: allGraphIds.job.filter(id => !allIds.job.includes(id)),
+            company: allGraphIds.company.filter(id => !allIds.company.includes(id)),
+          });
+          setFocusedNode(null);
+          useGraphStore.getState().clearSelection();
+          setPathPanelOpen(false);
+          setActiveNodeId('skill', '');
+          setActiveNodeId('job', '');
+          setActiveNodeId('company', '');
+          bumpGraphReloadKey();
+          await syncPreferenceState({ hideDisliked: false });
+          return;
+        }
+
+        // 第一次点击过滤后的结点，聚焦并高亮相关结点，隐藏无关结点
+        // 相关结点：与该结点直接相连的结点 + 自身
+        const relatedIds = new Set([node.id]);
+        graphData.edges.forEach(edge => {
+          if (edge.data.source === node.id && matchedIds.includes(edge.data.target)) relatedIds.add(edge.data.target);
+          if (edge.data.target === node.id && matchedIds.includes(edge.data.source)) relatedIds.add(edge.data.source);
+        });
+
+        // 只高亮本面板相关结点，其他面板不高亮
+        setHighlightedNodes({
+          skill: panelId === 'skill' ? Array.from(relatedIds) : [],
+          job: panelId === 'job' ? Array.from(relatedIds) : [],
+          company: panelId === 'company' ? Array.from(relatedIds) : [],
+        });
+        // 隐藏本面板中与该结点无关的过滤后结点
+        setHiddenNodes({
+          skill: panelId === 'skill' ? matchedIds.filter(id => !relatedIds.has(id)) : [],
+          job: panelId === 'job' ? matchedIds.filter(id => !relatedIds.has(id)) : [],
+          company: panelId === 'company' ? matchedIds.filter(id => !relatedIds.has(id)) : [],
+        });
+        setFocusedNode(node);
+        setActiveNodeId(panelId, node.id);
+        useGraphStore.setState({ selectedNode: node, focusedNode: node });
+        return;
       }
 
-      const isSameFocusedNode =
-        focusedNode?.graphArea === panelId && focusedNode.id === node.id
-      const isAlreadySelected = selectedNodes[panelId].some((item) => item.id === node.id)
-
+      // 非过滤器状态下，保持原有聚焦逻辑
       if (isSameFocusedNode) {
-        resetPanelToInitialState()
-        return
+        focusSnapshotRef.current = null;
+        hasRestoredFocusRef.current = true;
+        setFocusedNode(null);
+        useGraphStore.getState().clearSelection();
+        setPathPanelOpen(false);
+        setActiveNodeId('skill', '');
+        setActiveNodeId('job', '');
+        setActiveNodeId('company', '');
+        bumpGraphReloadKey();
+        await syncPreferenceState({ hideDisliked: false });
+        setHighlightedNodes({ skill: [], job: [], company: [] });
+        setHiddenNodes({ skill: [], job: [], company: [] });
+        return;
       }
 
-      captureFocusSnapshot()
-
-      if (isAlreadySelected) {
-        setActiveNodeId(panelId, node.id)
-        useGraphStore.setState({ selectedNode: node, focusedNode: node })
-        return
-      }
-
-      const nextSelectedNodes = [...selectedNodes[panelId], node]
-      setCurrentFocusColumn(panelId)
-      applyColumnContext(panelId, nextSelectedNodes)
-      setActiveNodeId(panelId, node.id)
-      useGraphStore.setState({
-        selectedNode: node,
-        focusedNode: node,
-      })
-      const sessionId = ++focusSessionRef.current
-
-      await handleBridge(node, shouldUseTwoHopExpand(panelId), sessionId)
+      captureFocusSnapshot();
+      setCurrentFocusColumn(panelId);
+      applyColumnContext(panelId, [node]);
+      setActiveNodeId(panelId, node.id);
+      useGraphStore.setState({ selectedNode: node, focusedNode: node });
+      const sessionId = ++focusSessionRef.current;
+      await handleBridge(node, shouldUseTwoHopExpand(panelId), sessionId);
     },
     [
       applyColumnContext,
       captureFocusSnapshot,
       handleBridge,
       panelId,
-      resetPanelToInitialState,
       focusedNode,
       selectedNode,
       selectedNodes,
       isPanelFocused,
       setActiveNodeId,
       setCurrentFocusColumn,
+      setFocusedNode,
+      setPathPanelOpen,
+      bumpGraphReloadKey,
+      syncPreferenceState,
+      highlightedNodes,
+      hiddenNodes,
+      activeBridgeEdges,
+      updateCurrentPath,
+      setCurrentExpandGraph,
+      backendFilterState,
+      filterMatchedNodes,
+      graphData,
+      setHighlightedNodes,
+      setHiddenNodes,
     ],
-  )
+  );
 
   const handleNodeHover = useCallback(
     (node: { id: string; label: string; category: string } | null) => {
@@ -457,7 +558,9 @@ export const GraphPreview = memo(function GraphPreview({
         data={graphData}
         activeNodeId={activeVisualNodeId}
         highlightedNodeIds={
-          isPathPanelOpen ? highlightedNodes[panelId] : []
+          backendFilterState.node_filters.length > 0
+            ? filterMatchedNodes[panelId]
+            : highlightedNodes[panelId]
         }
         hiddenNodeIds={hiddenNodes[panelId]}
         visibleEdgeIds={visibleEdgeIds}
@@ -470,6 +573,13 @@ export const GraphPreview = memo(function GraphPreview({
         wheelSensitivity={DEFAULT_WHEEL_SENSITIVITY}
         className="h-[320px] min-h-0 w-full overflow-hidden rounded-3xl bg-paper-50/70"
         onNodeClick={(node) => void handleNodeClick(toSelectedGraphNode(panelId, node))}
+        onNodeRightClick={(node) => {
+          const nextNode = toSelectedGraphNode(panelId, node)
+          void (async () => {
+            await cycleNodePreference(nextNode)
+            await syncPreferenceState({ hideDisliked: focusedPanel !== null })
+          })()
+        }}
         onNodeHover={handleNodeHover}
       />
       {activeSelectedNode ? (
@@ -490,12 +600,7 @@ export const GraphPreview = memo(function GraphPreview({
               <button
                 type="button"
                 onClick={() => {
-                  if (isLiked) {
-                    void unlikeNode(activeSelectedNode.id)
-                    return
-                  }
-
-                  void likeNode(activeSelectedNode)
+                  void cycleNodePreference(activeSelectedNode)
                 }}
                 className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
                   isLiked
@@ -508,12 +613,7 @@ export const GraphPreview = memo(function GraphPreview({
               <button
                 type="button"
                 onClick={() => {
-                  if (isDisliked) {
-                    void undislikeNode(activeSelectedNode.id)
-                    return
-                  }
-
-                    void dislikeNode(activeSelectedNode)
+                  void cycleNodePreference(activeSelectedNode)
                 }}
                 className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
                   isDisliked

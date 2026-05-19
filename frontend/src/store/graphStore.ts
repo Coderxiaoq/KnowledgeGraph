@@ -5,15 +5,10 @@ import {
   type RecommendationScore,
 } from '../graph/preferenceEngine'
 import { getGraphByPanel } from '../services/homeService'
-import {
-  addFilter,
-  clearFilters,
-  removeFilter,
-} from '../services/graphApi'
 import type {
   CytoscapeEdge,
   FilterState,
-  GraphFilter,
+  GraphFilterState,
   GraphResponse,
 } from '../types/graphApi'
 import type {
@@ -38,6 +33,12 @@ export type GraphStoreState = {
   searchKeyword: string
   searchResults: SelectedGraphNode[]
   activeFilters: FilterState
+  backendFilterState: GraphFilterState
+  filterMatchedNodes: Record<GraphPanelId, string[]>
+  activeFilterKind: 'location' | 'salary' | null
+  isFilterMode: boolean
+  filterRefreshKey: number
+  graphReloadKey: number
   focusedNode: SelectedGraphNode | null
   currentFocusColumn: GraphPanelId
   processedColumns: GraphPanelId[]
@@ -71,6 +72,12 @@ export type GraphStoreActions = {
   setSearchKeyword: (keyword: string) => void
   setSearchResults: (nodes: SelectedGraphNode[]) => void
   setActiveFilters: (filters: Partial<FilterState>) => void
+  setBackendFilterState: (filters: GraphFilterState) => void
+  setFilterMatchedNodes: (nodes: Record<GraphPanelId, string[]>) => void
+  setActiveFilterKind: (kind: 'location' | 'salary' | null) => void
+  setFilterMode: (enabled: boolean) => void
+  bumpFilterRefreshKey: () => void
+  bumpGraphReloadKey: () => void
   resetActiveFilters: () => void
   setFocusedNode: (node: SelectedGraphNode | null) => void
   setCurrentFocusColumn: (area: GraphPanelId) => void
@@ -80,6 +87,8 @@ export type GraphStoreActions = {
   dislikeNode: (node: SelectedGraphNode) => Promise<void>
   unlikeNode: (nodeId: string) => Promise<void>
   undislikeNode: (nodeId: string) => Promise<void>
+  cycleNodePreference: (node: SelectedGraphNode) => Promise<'positive' | 'negative'>
+  clearNodePreference: (nodeId: string) => Promise<void>
   recalculateRecommendations: (
     nodes?: SelectedGraphNode[],
     options?: { hideDisliked?: boolean },
@@ -128,6 +137,19 @@ const initialGraphState: GraphStoreState = {
   searchKeyword: '',
   searchResults: [],
   activeFilters: defaultActiveFilters,
+  backendFilterState: {
+    node_filters: [],
+    edge_filters: [],
+  },
+  filterMatchedNodes: {
+    skill: [],
+    job: [],
+    company: [],
+  },
+  activeFilterKind: null,
+  isFilterMode: false,
+  filterRefreshKey: 0,
+  graphReloadKey: 0,
   focusedNode: null,
   currentFocusColumn: 'job',
   processedColumns: [],
@@ -190,15 +212,6 @@ function getAllCandidateNodes() {
       toSelectedGraphNodeFromGraphData(area, node),
     ),
   )
-}
-
-function buildDislikeFilter(node: SelectedGraphNode): GraphFilter {
-  return {
-    target: 'node',
-    field: 'name',
-    value: node.label,
-    op: 'contains',
-  }
 }
 
 function buildHiddenNodeMap(hiddenIds: string[]) {
@@ -299,6 +312,20 @@ export const useGraphStore = create<GraphStore>((set) => ({
       },
     })),
 
+  setBackendFilterState: (filters) => set({ backendFilterState: filters }),
+
+  setFilterMatchedNodes: (nodes) => set({ filterMatchedNodes: nodes }),
+
+  setActiveFilterKind: (kind) => set({ activeFilterKind: kind }),
+
+  setFilterMode: (enabled) => set({ isFilterMode: enabled }),
+
+  bumpFilterRefreshKey: () =>
+    set((state) => ({ filterRefreshKey: state.filterRefreshKey + 1 })),
+
+  bumpGraphReloadKey: () =>
+    set((state) => ({ graphReloadKey: state.graphReloadKey + 1 })),
+
   resetActiveFilters: () => set({ activeFilters: { ...defaultActiveFilters } }),
 
   setFocusedNode: (node) => set({ focusedNode: node }),
@@ -335,8 +362,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
         dislikedNodeIds: toNodeIds(dislikedNodes),
       }
     })
-
-    await removeFilter(buildDislikeFilter(node))
     await useGraphStore.getState().syncPreferenceState({ hideDisliked: true })
   },
 
@@ -352,8 +377,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
         likedNodeIds: toNodeIds(likedNodes),
       }
     })
-
-    await addFilter(buildDislikeFilter(node))
     await useGraphStore.getState().syncPreferenceState({ hideDisliked: true })
   },
 
@@ -389,8 +412,40 @@ export const useGraphStore = create<GraphStore>((set) => ({
     })
 
     if (node) {
-      await removeFilter(buildDislikeFilter(node))
       await useGraphStore.getState().syncPreferenceState({ hideDisliked: true })
+    }
+  },
+
+  cycleNodePreference: async (node) => {
+    const state = useGraphStore.getState()
+    const isPositive = state.likedNodeIds.includes(node.id)
+    const isNegative = state.dislikedNodeIds.includes(node.id)
+
+    if (!isPositive && !isNegative) {
+      await useGraphStore.getState().likeNode(node)
+      return 'positive'
+    }
+
+    if (isPositive) {
+      await useGraphStore.getState().dislikeNode(node)
+      return 'negative'
+    }
+
+    await useGraphStore.getState().likeNode(node)
+    return 'positive'
+  },
+
+  clearNodePreference: async (nodeId) => {
+    const state = useGraphStore.getState()
+    const isPositive = state.likedNodeIds.includes(nodeId)
+    const isNegative = state.dislikedNodeIds.includes(nodeId)
+
+    if (isPositive) {
+      await useGraphStore.getState().unlikeNode(nodeId)
+    }
+
+    if (isNegative) {
+      await useGraphStore.getState().undislikeNode(nodeId)
     }
   },
 
@@ -523,7 +578,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
     }),
 
   clearPreferences: async () => {
-    await clearFilters()
     set({
       likedNodes: [],
       likedNodeIds: [],
@@ -531,13 +585,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
       dislikedNodeIds: [],
       recommendedNodes: [],
       recommendationScores: {},
-      hiddenNodes: {
-        skill: [],
-        job: [],
-        company: [],
-      },
-      processedColumns: [],
-      pathContextNodes: [],
     })
   },
 
@@ -545,6 +592,18 @@ export const useGraphStore = create<GraphStore>((set) => ({
     set({
       ...initialGraphState,
       activeFilters: { ...defaultActiveFilters },
+      backendFilterState: {
+        node_filters: [],
+        edge_filters: [],
+      },
+      filterMatchedNodes: {
+        skill: [],
+        job: [],
+        company: [],
+      },
+      activeFilterKind: null,
+      isFilterMode: false,
+      filterRefreshKey: 0,
     }),
 }))
 

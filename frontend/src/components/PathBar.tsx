@@ -77,16 +77,21 @@ export const PathBar = memo(function PathBar() {
   const highlightedNodes = useGraphStore((state) => state.highlightedNodes)
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
   const setFocusedNode = useGraphStore((state) => state.setFocusedNode)
-  const resetGraphState = useGraphStore((state) => state.resetGraphState)
   const updatePathContext = useGraphStore((state) => state.updatePathContext)
   const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
   const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
   const hoveredPathNodeId = usePathStore((state) => state.hoveredPathNodeId)
   const activePathNodeId = usePathStore((state) => state.activePathNodeId)
   const isPathPanelOpen = usePathStore((state) => state.isPathPanelOpen)
+  const isPreferencePanelOpen = usePathStore((state) => state.isPreferencePanelOpen)
   const setHoveredPathNodeId = usePathStore((state) => state.setHoveredPathNodeId)
   const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
+  const setPreferencePanelOpen = usePathStore((state) => state.setPreferencePanelOpen)
   const requestNavigation = usePathStore((state) => state.requestNavigation)
+  const likedNodes = useGraphStore((state) => state.likedNodes)
+  const dislikedNodes = useGraphStore((state) => state.dislikedNodes)
+  const clearNodePreference = useGraphStore((state) => state.clearNodePreference)
+  const clearPreferences = useGraphStore((state) => state.clearPreferences)
 
   const [position, setPosition] = useState(DEFAULT_POSITION)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
@@ -202,7 +207,7 @@ export const PathBar = memo(function PathBar() {
     }
   }, [currentPath, isPathPanelOpen, panels, position])
 
-  if (!currentPath || !isPathPanelOpen) {
+  if ((!currentPath || !isPathPanelOpen) && !isPreferencePanelOpen) {
     return null
   }
 
@@ -238,7 +243,7 @@ export const PathBar = memo(function PathBar() {
   function handleClose(event: React.MouseEvent<HTMLButtonElement>) {
     event.stopPropagation()
     setPathPanelOpen(false)
-    resetGraphState()
+    setPreferencePanelOpen(false)
     setFocusedNode(null)
     setFocusedPanel(null)
     setActiveNodeId('skill', '')
@@ -336,16 +341,28 @@ export const PathBar = memo(function PathBar() {
             <div className="h-full w-full bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.55)_28%,rgba(35,211,166,0.88)_76%,rgba(255,209,102,0.42)_100%)]" />
           </div>
 
-          <button
-            type="button"
-            onClick={handleClose}
-            className="relative z-10 rounded-full border border-ink-900/8 bg-white/90 px-3 py-1 text-[11px] font-semibold text-ink-600 transition hover:bg-white"
-          >
-            Close
-          </button>
+          <div className="relative z-10 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-full border border-ink-900/8 bg-white/90 px-3 py-1 text-[11px] font-semibold text-ink-600 transition hover:bg-white"
+            >
+              Close
+            </button>
+            {!isPathPanelOpen ? (
+              <button
+                type="button"
+                onClick={() => setPreferencePanelOpen(false)}
+                className="rounded-full border border-ink-900/8 bg-white/90 px-3 py-1 text-[11px] font-semibold text-ink-600 transition hover:bg-white"
+              >
+                Hide
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="relative px-4 py-4">
+        {isPathPanelOpen ? (
+          <div className="relative px-4 py-4">
           <AnimatePresence mode="wait">
             {panels.some((panel) => panel.nodes.length > 0) ? (
               <motion.div
@@ -449,7 +466,65 @@ export const PathBar = memo(function PathBar() {
               <EmptyState key="empty" />
             )}
           </AnimatePresence>
-        </div>
+          </div>
+        ) : null}
+
+        {isPreferencePanelOpen ? (
+          <div className="border-t border-ink-900/6 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+              Preferences
+            </p>
+            <button
+              type="button"
+              onClick={() => void clearPreferences()}
+              className="rounded-full border border-ink-900/8 bg-white px-3 py-1 text-[11px] font-semibold text-ink-700 transition hover:bg-slate-50"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <section className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
+                Positive
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {likedNodes.length > 0 ? likedNodes.map((node) => (
+                  <button
+                    key={`like-${node.id}`}
+                    type="button"
+                    onClick={() => void clearNodePreference(node.id)}
+                    className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"
+                  >
+                    {node.label}
+                  </button>
+                )) : (
+                  <p className="text-sm text-emerald-700/80">暂无 positive 节点</p>
+                )}
+              </div>
+            </section>
+            <section className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-700">
+                Negative
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {dislikedNodes.length > 0 ? dislikedNodes.map((node) => (
+                  <button
+                    key={`dislike-${node.id}`}
+                    type="button"
+                    onClick={() => void clearNodePreference(node.id)}
+                    className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-rose-700 ring-1 ring-rose-200"
+                  >
+                    {node.label}
+                  </button>
+                )) : (
+                  <p className="text-sm text-rose-700/80">暂无 negative 节点</p>
+                )}
+              </div>
+            </section>
+          </div>
+          </div>
+        ) : null}
       </motion.div>
     </div>
   )

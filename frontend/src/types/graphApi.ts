@@ -37,12 +37,16 @@ export type FilterOperator =
   | 'lt'
   | 'lte'
   | 'in'
+  | 'salary_in'
+
+export type FilterMode = 'positive' | 'negative'
 
 export interface GraphFilter {
   target: FilterTarget
   field: string
   value: unknown
   op: FilterOperator
+  mode?: FilterMode
 }
 
 export type GraphFilterState = {
@@ -70,6 +74,16 @@ export type RecommendQuery = {
   type: RecommendType
   id1: string
   id2: string
+  limit?: number
+  signal?: AbortSignal
+}
+
+export type RecommendPreferencePayload = {
+  type: RecommendType
+  primary_pos_list: string[]
+  primary_neg_list: string[]
+  secondary_pos_list: string[]
+  secondary_neg_list: string[]
   limit?: number
   signal?: AbortSignal
 }
@@ -111,11 +125,21 @@ export type InferencePath = {
 }
 
 export type RecommendResponse = {
-  recommendedNodes: RecommendNodeScore[]
-  highlightedNodeIds: string[]
-  hiddenNodeIds: string[]
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  chains?: Array<{
+    score: number
+    reason?: string
+    nodes: GraphNode[]
+    edges: GraphEdge[]
+  }>
+  single_chains?: Array<{
+    score: number
+    reason?: string
+    nodes: GraphNode[]
+    edges: GraphEdge[]
+  }>
   currentPath: InferencePath | null
-  graph?: GraphResponse
 }
 
 export type LegacyDualAreaSelection = {
@@ -133,7 +157,10 @@ export type LegacyRecommend2To1Params = {
   signal?: AbortSignal
 }
 
-export type Recommend2To1Params = RecommendQuery | LegacyRecommend2To1Params
+export type Recommend2To1Params =
+  | RecommendQuery
+  | LegacyRecommend2To1Params
+  | RecommendPreferencePayload
 
 export type CytoscapeNode = {
   data: {

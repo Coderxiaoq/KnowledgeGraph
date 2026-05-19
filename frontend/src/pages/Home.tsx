@@ -6,6 +6,7 @@ import { GraphPanel } from '../components/graph/GraphPanel'
 import { AppShell } from '../components/layout/AppShell'
 import { getGraphByPanel, getHomeContent } from '../services/homeService'
 import { useGraphStore } from '../store/graphStore'
+import { usePathStore } from '../store/pathStore'
 import { useAppStore } from '../store/useAppStore'
 import type { GraphPanelId } from '../types/graph'
 
@@ -44,6 +45,9 @@ export function Home() {
   const activeNodeIds = useAppStore((state) => state.activeNodeIds)
   const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
   const isGraphInteracting = useGraphStore((state) => state.isGraphInteracting)
+  const clearSelection = useGraphStore((state) => state.clearSelection)
+  const setActiveNodeId = useAppStore((state) => state.setActiveNodeId)
+  const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
   const orderedPanels = getOrderedPanels(focusedPanel)
   const isFocusedLayout = focusedPanel !== null
 
@@ -70,6 +74,11 @@ export function Home() {
         return
       }
 
+      clearSelection()
+      setPathPanelOpen(false)
+      setActiveNodeId('skill', '')
+      setActiveNodeId('job', '')
+      setActiveNodeId('company', '')
       setFocusedPanel(null)
     }
 
@@ -78,14 +87,31 @@ export function Home() {
     return () => {
       document.removeEventListener('pointerdown', handleOutsidePointerDown)
     }
-  }, [focusedPanel, isGraphInteracting, setFocusedPanel])
+  }, [
+    clearSelection,
+    focusedPanel,
+    isGraphInteracting,
+    setActiveNodeId,
+    setFocusedPanel,
+    setPathPanelOpen,
+  ])
 
   function handlePanelFocus(panelId: GraphPanelId) {
     if (focusedPanel === panelId) {
+      clearSelection()
+      setPathPanelOpen(false)
+      setActiveNodeId('skill', '')
+      setActiveNodeId('job', '')
+      setActiveNodeId('company', '')
       setFocusedPanel(null)
       return
     }
 
+    clearSelection()
+    setPathPanelOpen(false)
+    setActiveNodeId('skill', '')
+    setActiveNodeId('job', '')
+    setActiveNodeId('company', '')
     setFocusedPanel(panelId)
   }
 
