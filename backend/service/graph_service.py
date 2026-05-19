@@ -1,138 +1,17 @@
-from threading import RLock
 from typing import Any, Dict, List, Optional
-from datetime import date, datetime, time
-
-
-_FILTER_LOCK = RLock()
-# 进程内全局过滤状态：所有查询接口都会共享该配置。
-_GLOBAL_GRAPH_FILTER: Dict[str, List[Dict[str, Any]]] = {
-    "node_filters": [],
-    "edge_filters": [],
-}
-
-
-def _to_jsonable(value: Any) -> Any:
-    """递归转换属性值，确保可被 FastAPI/Pydantic 序列化。"""
-    if value is None or isinstance(value, (str, int, float, bool)):
-        return value
-    if isinstance(value, (datetime, date, time)):
-        return value.isoformat()
-    if isinstance(value, dict):
-        return {str(k): _to_jsonable(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple, set)):
-        return [_to_jsonable(item) for item in value]
-
-    # 兼容 Neo4j temporal/spatial 等对象（常见有 iso_format 方法）。
-    iso_format = getattr(value, "iso_format", None)
-    if callable(iso_format):
-        try:
-            return iso_format()
-        except Exception:
-            pass
-
-    return str(value)
+from service.fliter_service import (
+    _to_jsonable,
+    add_filter_option as _add_filter_option,
+    apply_graph_json_filter,
+    clear_global_filter as _clear_global_filter,
+    get_global_filter as _get_global_filter,
+    remove_filter_option as _remove_filter_option,
+    set_global_filter as _set_global_filter,
+)
 
 
 def _extract_node_id(node):
     return node.get("skill_id") or node.get("role_id") or node.get("company_id")
-
-
-def _normalize_filter_option(option: Dict[str, Any]) -> Dict[str, Any]:
-    """将过滤项补齐默认字段，统一成内部结构。"""
-    return {
-        "target": option.get("target", "node"),
-        "field": option.get("field"),
-        "value": option.get("value"),
-        "op": option.get("op", "eq")
-    }
-
-
-def _safe_float(value: Any) -> float:
-    """数值比较前的安全转换，避免 bool 被当作 0/1。"""
-    if isinstance(value, bool):
-        raise ValueError("bool is not numeric")
-    return float(value)
-
-
-def _matches_filter(item_properties: Dict[str, Any], rule: Dict[str, Any]) -> bool:
-    """判断单条节点/边属性是否满足一条过滤规则。"""
-    field = rule.get("field")
-    op = rule.get("op", "eq")
-    expected = rule.get("value")
-    if not isinstance(field, str):
-        return False
-    actual = item_properties.get(field)
-
-    if op == "eq":
-        return actual == expected
-    if op == "contains":
-        if actual is None:
-            return False
-        return str(expected).lower() in str(actual).lower()
-    if op == "gt":
-        try:
-            return _safe_float(actual) > _safe_float(expected)
-        except (TypeError, ValueError):
-            return False
-    if op == "gte":
-        try:
-            return _safe_float(actual) >= _safe_float(expected)
-        except (TypeError, ValueError):
-            return False
-    if op == "lt":
-        try:
-            return _safe_float(actual) < _safe_float(expected)
-        except (TypeError, ValueError):
-            return False
-    if op == "lte":
-        try:
-            return _safe_float(actual) <= _safe_float(expected)
-        except (TypeError, ValueError):
-            return False
-    if op == "in":
-        if isinstance(expected, list):
-            return actual in expected
-        return actual == expected
-
-    return True
-
-
-def _apply_rule_list(items: List[Dict[str, Any]], rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """对同类元素应用规则列表：命中规则(AND)的元素会被剔除。"""
-    if not rules:
-        return items
-
-    filtered = []
-    for item in items:
-        properties = item.get("properties", {})
-        # 满足全部规则 -> 视为命中黑名单，直接剔除。
-        if not all(_matches_filter(properties, rule) for rule in rules):
-            filtered.append(item)
-    return filtered
-
-
-def apply_graph_json_filter(graph_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    对 format_neo4j_data 的输出做统一后置过滤。
-    - 节点命中过滤规则后剔除
-    - 边命中过滤规则后剔除
-    - 若存在节点过滤，则额外裁剪掉两端不在节点结果中的边
-    """
-    with _FILTER_LOCK:
-        # 复制一份快照，避免过滤过程中被并发修改。
-        node_rules = list(_GLOBAL_GRAPH_FILTER["node_filters"])
-        edge_rules = list(_GLOBAL_GRAPH_FILTER["edge_filters"])
-
-    nodes = _apply_rule_list(graph_data.get("nodes", []), node_rules)
-    node_ids = {node["id"] for node in nodes}
-
-    edges = graph_data.get("edges", [])
-    if edge_rules:
-        edges = _apply_rule_list(edges, edge_rules)
-    if node_rules:
-        edges = [edge for edge in edges if edge.get("source") in node_ids and edge.get("target") in node_ids]
-
-    return {"nodes": nodes, "edges": edges}
 
 
 def format_neo4j_data(result) -> dict:
@@ -181,50 +60,23 @@ class GraphService:
 
     @staticmethod
     def get_global_filter() -> Dict[str, List[Dict[str, Any]]]:
-        """读取当前全局过滤器（用于前端回显当前过滤状态）。"""
-        with _FILTER_LOCK:
-            return {
-                "node_filters": list(_GLOBAL_GRAPH_FILTER["node_filters"]),
-                "edge_filters": list(_GLOBAL_GRAPH_FILTER["edge_filters"]),
-            }
+        return _get_global_filter()
 
     @staticmethod
     def set_global_filter(node_filters: List[Dict[str, Any]], edge_filters: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-        """覆盖设置全局过滤器（整包替换）。"""
-        normalized_nodes = [_normalize_filter_option(item) for item in node_filters]
-        normalized_edges = [_normalize_filter_option(item) for item in edge_filters]
-        with _FILTER_LOCK:
-            _GLOBAL_GRAPH_FILTER["node_filters"] = normalized_nodes
-            _GLOBAL_GRAPH_FILTER["edge_filters"] = normalized_edges
-        return GraphService.get_global_filter()
+        return _set_global_filter(node_filters, edge_filters)
 
     @staticmethod
     def add_filter_option(option: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
-        """新增一条过滤项，按 target 追加到 node_filters 或 edge_filters。"""
-        normalized = _normalize_filter_option(option)
-        target = normalized.get("target", "node")
-        key = "edge_filters" if target == "edge" else "node_filters"
-        with _FILTER_LOCK:
-            _GLOBAL_GRAPH_FILTER[key].append(normalized)
-        return GraphService.get_global_filter()
+        return _add_filter_option(option)
 
     @staticmethod
     def remove_filter_option(option: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
-        """删除与传入完全相同的一条过滤项。"""
-        normalized = _normalize_filter_option(option)
-        target = normalized.get("target", "node")
-        key = "edge_filters" if target == "edge" else "node_filters"
-        with _FILTER_LOCK:
-            _GLOBAL_GRAPH_FILTER[key] = [item for item in _GLOBAL_GRAPH_FILTER[key] if item != normalized]
-        return GraphService.get_global_filter()
+        return _remove_filter_option(option)
 
     @staticmethod
     def clear_global_filter() -> Dict[str, List[Dict[str, Any]]]:
-        """清空全局过滤器。"""
-        with _FILTER_LOCK:
-            _GLOBAL_GRAPH_FILTER["node_filters"] = []
-            _GLOBAL_GRAPH_FILTER["edge_filters"] = []
-        return GraphService.get_global_filter()
+        return _clear_global_filter()
 
     @staticmethod
     def search_nodes(session, keyword: str, limit: int = 50) -> dict:

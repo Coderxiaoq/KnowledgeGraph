@@ -8,6 +8,14 @@ export type GraphJson =
     }
 
 export type GraphProperties = Record<string, GraphJson>
+export type GraphJson =
+  | GraphPrimitive
+  | GraphJson[]
+  | {
+      [key: string]: GraphJson
+    }
+
+export type GraphProperties = Record<string, GraphJson>
 
 export type GraphNode = {
   id: string
@@ -95,7 +103,11 @@ export type SearchNodesParams = {
   limit?: number
   debounceMs?: number
   signal?: AbortSignal
+  debounceMs?: number
+  signal?: AbortSignal
 }
+
+export type SearchNodesResponse = GraphResponse
 
 export type SearchNodesResponse = GraphResponse
 
@@ -182,6 +194,12 @@ export type CytoscapeEdge = {
 }
 
 export type CytoscapeElements = Array<CytoscapeNode | CytoscapeEdge>
+
+export type ApiEnvelope<T> = {
+  code: number
+  msg: string
+  data: T
+}
 
 export type ApiEnvelope<T> = {
   code: number

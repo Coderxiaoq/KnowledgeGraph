@@ -13,6 +13,7 @@ import type {
 } from '../types/graphApi'
 import type {
   GraphData,
+  GraphData,
   GraphPanelId,
   GraphPath,
   KnowledgeGraphNodeEvent,
@@ -43,11 +44,17 @@ export type GraphStoreState = {
   currentFocusColumn: GraphPanelId
   processedColumns: GraphPanelId[]
   pathContextNodes: SelectedGraphNode[]
+  currentFocusColumn: GraphPanelId
+  processedColumns: GraphPanelId[]
+  pathContextNodes: SelectedGraphNode[]
   likedNodes: SelectedGraphNode[]
+  likedNodeIds: string[]
   likedNodeIds: string[]
   dislikedNodes: SelectedGraphNode[]
   dislikedNodeIds: string[]
+  dislikedNodeIds: string[]
   recommendedNodes: SelectedGraphNode[]
+  recommendationScores: Record<string, RecommendationScore>
   recommendationScores: Record<string, RecommendationScore>
   currentPath: GraphPath | null
   currentExpandGraph: GraphResponse | null
@@ -57,6 +64,7 @@ export type GraphStoreActions = {
   setFocusArea: (area: GraphPanelId) => void
   selectNode: (node: SelectedGraphNode | null) => void
   toggleSelectedNode: (area: GraphPanelId, node: SelectedGraphNode) => void
+  clearPanelSelection: (area: GraphPanelId) => void
   clearPanelSelection: (area: GraphPanelId) => void
   setHoveredNode: (node: SelectedGraphNode | null) => void
   setGraphInteraction: (state: {
@@ -154,11 +162,17 @@ const initialGraphState: GraphStoreState = {
   currentFocusColumn: 'job',
   processedColumns: [],
   pathContextNodes: [],
+  currentFocusColumn: 'job',
+  processedColumns: [],
+  pathContextNodes: [],
   likedNodes: [],
+  likedNodeIds: [],
   likedNodeIds: [],
   dislikedNodes: [],
   dislikedNodeIds: [],
+  dislikedNodeIds: [],
   recommendedNodes: [],
+  recommendationScores: {},
   recommendationScores: {},
   currentPath: null,
   currentExpandGraph: null,
@@ -262,6 +276,16 @@ export const useGraphStore = create<GraphStore>((set) => ({
       },
     })),
 
+  clearPanelSelection: (area) =>
+    set((state) => ({
+      selectedNode:
+        state.selectedNode?.graphArea === area ? null : state.selectedNode,
+      selectedNodes: {
+        ...state.selectedNodes,
+        [area]: [],
+      },
+    })),
+
   setHoveredNode: (node) => set({ hoveredNode: node }),
 
   setGraphInteraction: (interactionState) =>
@@ -331,11 +355,15 @@ export const useGraphStore = create<GraphStore>((set) => ({
   setFocusedNode: (node) => set({ focusedNode: node }),
 
   setCurrentFocusColumn: (area) =>
+  setCurrentFocusColumn: (area) =>
     set((state) => ({
+      currentFocusColumn: area,
+      processedColumns: toUniquePanels([...state.processedColumns, area]),
       currentFocusColumn: area,
       processedColumns: toUniquePanels([...state.processedColumns, area]),
     })),
 
+  applyColumnContext: (area, nodes = []) =>
   applyColumnContext: (area, nodes = []) =>
     set((state) => ({
       currentFocusColumn: area,
@@ -573,6 +601,9 @@ export const useGraphStore = create<GraphStore>((set) => ({
       currentFocusColumn: 'job',
       processedColumns: [],
       pathContextNodes: [],
+      currentFocusColumn: 'job',
+      processedColumns: [],
+      pathContextNodes: [],
       currentPath: null,
       currentExpandGraph: null,
     }),
@@ -581,7 +612,9 @@ export const useGraphStore = create<GraphStore>((set) => ({
     set({
       likedNodes: [],
       likedNodeIds: [],
+      likedNodeIds: [],
       dislikedNodes: [],
+      dislikedNodeIds: [],
       dislikedNodeIds: [],
       recommendedNodes: [],
       recommendationScores: {},

@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { rankSearchResults } from '../graph/preferenceEngine'
 import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/data'
+import { useMemo, useState } from 'react'
+import { rankSearchResults } from '../graph/preferenceEngine'
+import { resolvePanelByLabel as resolvePanelByLabelFromGraph } from '../graph/data'
 import { getGraphByPanel } from '../services/homeService'
+import { searchNodes } from '../services/graphApi'
 import { searchNodes } from '../services/graphApi'
 import { useGraphStore } from '../store/graphStore'
 import { useAppStore } from '../store/useAppStore'
@@ -16,6 +20,19 @@ export function SearchBar() {
   const setHighlightedNodes = useGraphStore((state) => state.setHighlightedNodes)
   const setHiddenNodes = useGraphStore((state) => state.setHiddenNodes)
   const setFocusedNode = useGraphStore((state) => state.setFocusedNode)
+  const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
+  const recalculateRecommendations = useGraphStore(
+    (state) => state.recalculateRecommendations,
+  )
+  const likedNodeIds = useGraphStore((state) => state.likedNodeIds)
+  const dislikedNodeIds = useGraphStore((state) => state.dislikedNodeIds)
+  const selectedNodes = useGraphStore((state) => state.selectedNodes)
+  const focusedNode = useGraphStore((state) => state.focusedNode)
+  const hoveredNode = useGraphStore((state) => state.hoveredNode)
+  const currentFocusColumn = useGraphStore((state) => state.currentFocusColumn)
+  const pathContextNodes = useGraphStore((state) => state.pathContextNodes)
+  const processedColumns = useGraphStore((state) => state.processedColumns)
+  const searchResults = useGraphStore((state) => state.searchResults)
   const setCurrentFocusColumn = useGraphStore((state) => state.setCurrentFocusColumn)
   const recalculateRecommendations = useGraphStore(
     (state) => state.recalculateRecommendations,
@@ -78,6 +95,9 @@ export function SearchBar() {
     setShowMissingToast(false)
 
     try {
+      const graph = await searchNodes({
+        keyword,
+      })
       const graph = await searchNodes({
         keyword,
       })
@@ -198,6 +218,7 @@ export function SearchBar() {
 }
 
 function resolvePanelByLabel(label: string): GraphPanelId {
+  return resolvePanelByLabelFromGraph(label) ?? 'job'
   return resolvePanelByLabelFromGraph(label) ?? 'job'
 }
 

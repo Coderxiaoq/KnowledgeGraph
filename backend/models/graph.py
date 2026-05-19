@@ -37,9 +37,13 @@ class GraphFilterOption(BaseModel):
     target: Literal["node", "edge"] = Field(default="node", description="过滤对象：节点或边")
     field: str = Field(..., description="过滤的属性名，来自 properties 下的字段")
     value: Any = Field(..., description="过滤值")
-    op: Literal["eq", "contains", "gt", "gte", "lt", "lte", "in"] = Field(
+    op: Literal["eq", "contains", "gt", "gte", "lt", "lte", "in", "salary_in"] = Field(
         default="eq",
         description="过滤操作符"
+    )
+    mode: Literal["positive", "negative"] = Field(
+        default="negative",
+        description="过滤模式：`positive` 表示只保留满足全部条件的元素；`negative` 表示只要任一条件命中即剔除元素"
     )
 
 
@@ -51,3 +55,15 @@ class GraphFilterState(BaseModel):
 class GraphFilterSetRequest(BaseModel):
     node_filters: List[GraphFilterOption] = Field(default_factory=list)
     edge_filters: List[GraphFilterOption] = Field(default_factory=list)
+
+
+class Recommend2To1Request(BaseModel):
+    type: Literal["skill_to_role", "role_to_company", "company_to_role"] = Field(
+        ...,
+        description="推荐类型：skill_to_role / role_to_company / company_to_role",
+    )
+    primary_pos_list: List[str] = Field(default_factory=list, description="第一种节点的正向偏好列表")
+    primary_neg_list: List[str] = Field(default_factory=list, description="第一种节点的负向偏好列表")
+    secondary_pos_list: List[str] = Field(default_factory=list, description="第二种节点的正向偏好列表")
+    secondary_neg_list: List[str] = Field(default_factory=list, description="第二种节点的负向偏好列表")
+    limit: int = Field(default=3, ge=1, le=20, description="返回推荐数量上限")

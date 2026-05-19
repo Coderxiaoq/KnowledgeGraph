@@ -1,8 +1,13 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig } from 'axios'
+import axios from 'axios'
+import type { AxiosError, AxiosRequestConfig } from 'axios'
 import type {
   ApiEnvelope,
+  ApiEnvelope,
   GraphEdge,
+  GraphFilter,
+  GraphFilterState,
   GraphFilter,
   GraphFilterState,
   GraphNode,
@@ -10,7 +15,9 @@ import type {
   LegacyRecommend2To1Params,
   Recommend2To1Params,
   RecommendQuery,
+  RecommendQuery,
   RecommendResponse,
+  RecommendType,
   RecommendType,
   SearchNodesParams,
   SearchNodesResponse,
@@ -37,17 +44,42 @@ const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_GRAPH_API_BASE_URL
 
 const REQUEST_TIMEOUT = 10000
 const searchTimers = new Map<string, number>()
+function normalizeApiBaseUrl(rawBaseUrl: string | undefined) {
+  const fallback = 'http://localhost:8000/api/graph'
+
+  if (!rawBaseUrl?.trim()) {
+    return fallback
+  }
+
+  const normalized = rawBaseUrl.trim().replace(/\/$/, '')
+
+  if (normalized.endsWith('/api/graph')) {
+    return normalized
+  }
+
+  return `${normalized}/api/graph`
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_GRAPH_API_BASE_URL)
+
+const REQUEST_TIMEOUT = 10000
+const searchTimers = new Map<string, number>()
 
 export class GraphApiError extends Error {
+export class GraphApiError extends Error {
   status: number
+  code?: number
   code?: number
   details?: unknown
 
   constructor(message: string, status: number, details?: unknown, code?: number) {
+  constructor(message: string, status: number, details?: unknown, code?: number) {
     super(message)
+    this.name = 'GraphApiError'
     this.name = 'GraphApiError'
     this.status = status
     this.details = details
+    this.code = code
     this.code = code
   }
 }
@@ -102,6 +134,10 @@ function withOptionalSignal(
   return signal ? { signal } : {}
 }
 
+function debouncePromise<T>(
+  key: string,
+  waitMs: number,
+  factory: () => Promise<T>,
 function debouncePromise<T>(
   key: string,
   waitMs: number,
@@ -200,7 +236,60 @@ function deriveRecommendQuery(params: Recommend2To1Params): RecommendQuery {
     throw new GraphApiError(
       'recommend/2to1 requires exactly two company node ids for company_to_role',
       400,
+    return {
+      type: RecommendTypeEnum.SkillToRole,
+      id1,
+      id2,
+      limit,
+      signal,
+    }
+  }
+
+  if (targetArea === 'company') {
+    const [id1, id2] = selected.jobNodeIds ?? []
+
+    if (!id1 || !id2) {
+      throw new GraphApiError(
+        'recommend/2to1 requires exactly two role node ids for role_to_company',
+        400,
+      )
+    }
+
+    return {
+      type: RecommendTypeEnum.RoleToCompany,
+      id1,
+      id2,
+      limit,
+      signal,
+    }
+  }
+
+  const [id1, id2] = selected.companyNodeIds ?? []
+
+  if (!id1 || !id2) {
+    throw new GraphApiError(
+      'recommend/2to1 requires exactly two company node ids for company_to_role',
+      400,
     )
+  }
+
+  return {
+    type: RecommendTypeEnum.CompanyToRole,
+    id1,
+    id2,
+    limit,
+    signal,
+  }
+}
+
+export type {
+  GraphNode,
+  GraphEdge,
+  GraphResponse,
+  GraphFilter,
+  GraphFilterState,
+  RecommendResponse,
+  RecommendType,
   }
 
   return {
@@ -224,7 +313,11 @@ export type {
 
 export async function getAllNodes(signal?: AbortSignal): Promise<GraphNode[]> {
   return unwrapData<GraphNode[]>({
+export async function getAllNodes(signal?: AbortSignal): Promise<GraphNode[]> {
+  return unwrapData<GraphNode[]>({
     method: 'GET',
+    url: '/nodes',
+    ...withOptionalSignal(signal),
     url: '/nodes',
     ...withOptionalSignal(signal),
   })
@@ -232,12 +325,47 @@ export async function getAllNodes(signal?: AbortSignal): Promise<GraphNode[]> {
 
 export async function getAllEdges(signal?: AbortSignal): Promise<GraphEdge[]> {
   return unwrapData<GraphEdge[]>({
+export async function getAllEdges(signal?: AbortSignal): Promise<GraphEdge[]> {
+  return unwrapData<GraphEdge[]>({
     method: 'GET',
+    url: '/edges',
+    ...withOptionalSignal(signal),
     url: '/edges',
     ...withOptionalSignal(signal),
   })
 }
 
+export async function searchNodes({
+  keyword,
+  debounceMs = 250,
+  signal,
+}: SearchNodesParams): Promise<SearchNodesResponse> {
+  const normalizedKeyword = keyword.trim()
+
+  if (!normalizedKeyword) {
+    return {
+      nodes: [],
+      edges: [],
+    }
+  }
+
+  return debouncePromise(`search:${normalizedKeyword.toLowerCase()}`, debounceMs, () =>
+    unwrapData<GraphResponse>({
+      method: 'GET',
+      url: '/search',
+      params: {
+        keyword: normalizedKeyword,
+      },
+      ...withOptionalSignal(signal),
+    }),
+  )
+}
+
+export async function expandNode(
+  nodeId: string,
+  signal?: AbortSignal,
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
 export async function searchNodes({
   keyword,
   debounceMs = 250,
@@ -283,7 +411,23 @@ export async function expandNode2Hop(
   },
 ): Promise<GraphResponse> {
   return unwrapData<GraphResponse>({
+    url: `/expand/${encodeURIComponent(nodeId)}`,
+    ...withOptionalSignal(signal),
+  })
+}
+
+export async function expandNode2Hop(
+  nodeId: string,
+  options?: {
+    limit?: number
+    signal?: AbortSignal
+  },
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
     method: 'GET',
+    url: `/expand/2hop/${encodeURIComponent(nodeId)}`,
+    params: {
+      limit: options?.limit,
     url: `/expand/2hop/${encodeURIComponent(nodeId)}`,
     params: {
       limit: options?.limit,
@@ -291,7 +435,18 @@ export async function expandNode2Hop(
     ...withOptionalSignal(options?.signal),
   })
 }
+    ...withOptionalSignal(options?.signal),
+  })
+}
 
+export async function getNodesByCategory(
+  label: string,
+  options?: {
+    limit?: number
+    signal?: AbortSignal
+  },
+): Promise<GraphResponse> {
+  return unwrapData<GraphResponse>({
 export async function getNodesByCategory(
   label: string,
   options?: {
@@ -352,6 +507,14 @@ export async function recommend2To1(
       limit: query.limit,
     },
     ...withOptionalSignal(query.signal),
+    url: '/recommend/2to1',
+    params: {
+      type: query.type,
+      id1: query.id1,
+      id2: query.id2,
+      limit: query.limit,
+    },
+    ...withOptionalSignal(query.signal),
   })
 }
 
@@ -360,6 +523,8 @@ export async function getFilters(
 ): Promise<GraphFilterState> {
   return unwrapDirect<GraphFilterState>({
     method: 'GET',
+    url: '/filter',
+    ...withOptionalSignal(signal),
     url: '/filter',
     ...withOptionalSignal(signal),
   })
@@ -371,6 +536,9 @@ export async function setFilters(
 ): Promise<GraphFilterState> {
   return unwrapDirect<GraphFilterState>({
     method: 'POST',
+    url: '/filter',
+    data: filters,
+    ...withOptionalSignal(signal),
     url: '/filter',
     data: filters,
     ...withOptionalSignal(signal),
@@ -386,6 +554,9 @@ export async function addFilter(
     url: '/filter/add',
     data: filter,
     ...withOptionalSignal(signal),
+    url: '/filter/add',
+    data: filter,
+    ...withOptionalSignal(signal),
   })
 }
 
@@ -395,6 +566,9 @@ export async function removeFilter(
 ): Promise<GraphFilterState> {
   return unwrapDirect<GraphFilterState>({
     method: 'POST',
+    url: '/filter/remove',
+    data: filter,
+    ...withOptionalSignal(signal),
     url: '/filter/remove',
     data: filter,
     ...withOptionalSignal(signal),
@@ -408,8 +582,28 @@ export async function clearFilters(
     method: 'POST',
     url: '/filter/clear',
     ...withOptionalSignal(signal),
+    url: '/filter/clear',
+    ...withOptionalSignal(signal),
   })
 }
+
+export async function syncDislikeFilters(
+  filters: GraphFilter[],
+  signal?: AbortSignal,
+): Promise<GraphFilterState> {
+  if (filters.length === 0) {
+    return clearFilters(signal)
+  }
+
+  return setFilters(
+    {
+      node_filters: filters,
+      edge_filters: [],
+    },
+    signal,
+  )
+}
+
 
 export async function syncDislikeFilters(
   filters: GraphFilter[],
