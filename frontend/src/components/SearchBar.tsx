@@ -9,10 +9,10 @@ import { usePathStore } from '../store/pathStore'
 import type { GraphPanelId, SelectedGraphNode } from '../types/graph'
 import type { GraphFilter, FilterOperator, FilterMode, GraphNode as RawGraphNode } from '../types/graphApi'
 
-const FIELD_OPTIONS: { label: string; field: string; op: FilterOperator; placeholder: string }[] = [
-  { label: '薪资范围', field: 'salary', op: 'salary_in', placeholder: '如 20k-40k 或 20k+' },
-  { label: '城市/地点', field: 'location', op: 'contains', placeholder: '如 北京' },
-  { label: '节点名称', field: 'name', op: 'contains', placeholder: '关键词' },
+const FIELD_OPTIONS: { label: string; field: string; op: FilterOperator; placeholder: string; defaultMode: FilterMode; target: 'node' | 'edge' }[] = [
+  { label: '薪资', field: 'salary', op: 'salary_in', placeholder: '预期薪资，如50000', defaultMode: 'positive', target: 'edge' },
+  { label: '城市/地点', field: 'location', op: 'contains', placeholder: '如 北京', defaultMode: 'negative', target: 'node' },
+  { label: '节点名称', field: 'name', op: 'contains', placeholder: '关键词', defaultMode: 'negative', target: 'node' },
 ]
 
 export function SearchBar() {
@@ -45,7 +45,7 @@ export function SearchBar() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedField, setSelectedField] = useState(FIELD_OPTIONS[0])
   const [filterValue, setFilterValue] = useState('')
-  const [filterMode, setFilterMode] = useState<FilterMode>('negative')
+  const [filterMode, setFilterMode] = useState<FilterMode>(FIELD_OPTIONS[0].defaultMode)
   const [isApplying, setIsApplying] = useState(false)
 
   const setFocusedPanel = useAppStore((state) => state.setFocusedPanel)
@@ -53,7 +53,10 @@ export function SearchBar() {
   const requestNavigation = usePathStore((state) => state.requestNavigation)
   const setPathPanelOpen = usePathStore((state) => state.setPathPanelOpen)
 
-  const activeNodeFilters = backendFilterState.node_filters
+  const activeNodeFilters = [
+    ...backendFilterState.node_filters,
+    ...backendFilterState.edge_filters,
+  ]
 
   const rankedResults = useMemo(() => {
     return rankSearchResults(searchResults, {
@@ -89,6 +92,8 @@ export function SearchBar() {
     if (!keyword) {
       setSearchCandidate(null)
       setShowMissingToast(false)
+      setHighlightedNodes({ skill: [], job: [], company: [] })
+      setHiddenNodes({ skill: [], job: [], company: [] })
       return
     }
 
@@ -107,11 +112,15 @@ export function SearchBar() {
         setSearchCandidate(null)
         setFocusedNode(null)
         setShowMissingToast(true)
+        setHighlightedNodes({ skill: [], job: [], company: [] })
+        setHiddenNodes({ skill: [], job: [], company: [] })
         return
       }
 
       setSearchCandidate(focusNode)
       setShowMissingToast(false)
+      setHighlightedNodes(buildHighlightMap(results))
+      setHiddenNodes({ skill: [], job: [], company: [] })
     } finally {
       setIsSearching(false)
     }
@@ -124,7 +133,7 @@ export function SearchBar() {
     setIsApplying(true)
     try {
       const option: GraphFilter = {
-        target: 'node',
+        target: selectedField.target,
         field: selectedField.field,
         value,
         op: selectedField.op,
@@ -283,51 +292,45 @@ export function SearchBar() {
               </div>
             ) : null}
 
-            <div className="flex flex-col gap-2 md:flex-row md:items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">字段</label>
-                <select
-                  value={selectedField.field}
-                  onChange={(e) => {
-                    const found = FIELD_OPTIONS.find((o) => o.field === e.target.value)
-                    if (found) setSelectedField(found)
-                  }}
-                  className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
-                >
-                  {FIELD_OPTIONS.map((o) => (
-                    <option key={o.field} value={o.field}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedField.field}
+                onChange={(e) => {
+                  const found = FIELD_OPTIONS.find((o) => o.field === e.target.value)
+                  if (found) {
+                    setSelectedField(found)
+                    setFilterMode(found.defaultMode)
+                  }
+                }}
+                className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+              >
+                {FIELD_OPTIONS.map((o) => (
+                  <option key={o.field} value={o.field}>{o.label}</option>
+                ))}
+              </select>
 
-              <div className="flex flex-1 flex-col gap-1">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">值</label>
-                <input
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void handleAddFilter() }}
-                  placeholder={selectedField.placeholder}
-                  className="h-9 flex-1 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
-                />
-              </div>
+              <input
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleAddFilter() }}
+                placeholder={selectedField.placeholder}
+                className="h-9 w-36 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+              />
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">模式</label>
-                <select
-                  value={filterMode}
-                  onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-                  className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
-                >
-                  <option value="negative">排除匹配</option>
-                  <option value="positive">仅保留匹配</option>
-                </select>
-              </div>
+              <select
+                value={filterMode}
+                onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+                className="h-9 rounded-xl border border-ink-900/10 bg-white px-3 text-sm text-ink-900 outline-none focus:border-mint-500"
+              >
+                <option value="negative">排除匹配</option>
+                <option value="positive">仅保留匹配</option>
+              </select>
 
               <button
                 type="button"
                 onClick={() => void handleAddFilter()}
                 disabled={isApplying || !filterValue.trim()}
-                className="h-9 rounded-xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-50"
+                className="h-9 w-36 rounded-xl bg-ink-950 px-4 text-sm font-semibold text-white transition hover:bg-ink-900 disabled:opacity-50"
               >
                 添加
               </button>
