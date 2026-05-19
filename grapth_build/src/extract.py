@@ -4,7 +4,7 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 
 # ============ 加载数据 ============
-with open('knowledge_graph.json', 'r', encoding='utf-8') as f:
+with open('../data/knowledge_graph.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 # ============ 主流IT技能定义（更精简） ============
