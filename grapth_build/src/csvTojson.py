@@ -1,7 +1,3 @@
-"""
-阶段1: 知识提取 (Knowledge Extraction)
-从 data.csv 提取 Role + Skill 实体和 REQUIRES 关系，构建原始知识图谱。
-"""
 import pandas as pd
 import re
 import json
@@ -10,27 +6,27 @@ from collections import defaultdict
 # ==========================================
 # 步骤 1: 数据加载与预处理
 # ==========================================
-print("[1/5] 加载数据...")
+print("1:正在加载数据...")
 df = pd.read_csv('../data/data.csv')
 
-jobs_map = {}          # {岗位名称: Role节点}
-skills_map = {}        # {技能名称: Skill节点}
-edge_counter = defaultdict(int)  # {(岗位名, 技能名): 同现次数}
+# 初始化存储容器
+jobs_map = {}  # 用于去重岗位：{岗位名称: 岗位信息字典}
+skills_map = {}  # 用于去重技能：{技能名称: 技能信息字典}
+edge_counter = defaultdict(int)  # 用于统计边权重：{(岗位名, 技能名): 次数}
+companies_map = {}  # 用于去重公司：{公司名称: 公司信息字典}
+recruit_counter = defaultdict(int)  # 用于统计招聘边权重：{(公司名, 岗位名): 次数}
 
-# ==========================================
-# 步骤 2: 构建岗位节点 (按原始名称去重)
-# ==========================================
-print("[2/5] 构建岗位节点...")
+print("步骤 2: 正在构建岗位节点...")
 
-for _, row in df.iterrows():
+for index, row in df.iterrows():
     job_name = str(row['岗位名称']).strip()
-    if not job_name or job_name == 'nan':
-        continue
+    company_name = str(row['公司名称']).strip()
 
+    # 如果该岗位还没记录过，则创建新记录
     if job_name not in jobs_map:
         jobs_map[job_name] = {
-            "id": f"r_{len(jobs_map) + 1}",
-            "label": "Role",
+            "id": f"r_{len(jobs_map) + 1}",  # 生成唯一 ID
+            "label": "Role",  # 本体类型
             "properties": {
                 "name": job_name,
                 "salary": str(row['薪资']).strip(),
@@ -39,98 +35,119 @@ for _, row in df.iterrows():
             }
         }
 
-# ==========================================
-# 步骤 3: 构建技能节点并统计边权重
-# ==========================================
-print("[3/5] 构建技能节点并统计关系...")
-
-# 多词技能名保护：拆分前替换为占位符，拆分后还原
-MULTI_WORD_PROTECT = {
-    'SQL Server': 'SQL_Server',
-    'SQL server': 'SQL_Server',
-    'Node.js': 'Node_js',
-    'C++': 'CPlusPlus',
-    'C#': 'CSharp',
-    '.NET': 'DotNet',
-    'ASP.NET': 'ASP_DotNet',
-    'TCP/IP': 'TCP_IP',
-    'PL/SQL': 'PL_SQL',
-}
-
-for _, row in df.iterrows():
-    job_name = str(row['岗位名称']).strip()
-    skills_raw = str(row['专业学术术语']).strip()
-
-    if not job_name or job_name == 'nan':
-        continue
-    if not skills_raw or skills_raw == 'nan':
-        continue
-
-    # 保护多词技能名
-    for orig, placeholder in MULTI_WORD_PROTECT.items():
-        skills_raw = skills_raw.replace(orig, placeholder)
-
-    # 分割技能词: 逗号、分号、顿号、空白字符
-    skill_list = re.split(r'[,;、\s]+', skills_raw)
-
-    for skill in skill_list:
-        skill = skill.strip()
-
-        # 还原被保护的技能名
-        for orig, placeholder in MULTI_WORD_PROTECT.items():
-            skill = skill.replace(placeholder, orig)
-
-        # 过滤空词和单字符
-        if not skill or len(skill) <= 1:
-            continue
-
-        # 创建技能节点 (如果不存在)
-        if skill not in skills_map:
-            skills_map[skill] = {
-                "id": f"s_{len(skills_map) + 1}",
-                "label": "Skill",
-                "properties": {"name": skill}
+    # 构建公司节点 (去重)
+    if company_name and company_name != 'nan':
+        if company_name not in companies_map:
+            companies_map[company_name] = {
+                "id": f"c_{len(companies_map) + 1}",
+                "label": "Company",
+                "properties": {
+                    "name": company_name
+                }
             }
 
-        # 统计边权重
-        edge_counter[(job_name, skill)] += 1
+print("步骤 3: 正在构建技能节点并统计关系...")
+
+for index, row in df.iterrows():
+    job_name = str(row['岗位名称']).strip()
+    company_name = str(row['公司名称']).strip()
+    skills_raw = str(row['专业学术术语']).strip()
+
+    if skills_raw and skills_raw != 'nan':
+        # 使用正则分割技能词（支持逗号、空格、顿号分隔）
+        skill_list = re.split(r'[,;、\s]', skills_raw)
+
+        for skill in skill_list:
+            skill = skill.strip()
+            if skill and len(skill) > 1:  # 过滤空词或单字
+
+                # 1. 构建技能节点 (如果不存在)
+                if skill not in skills_map:
+                    skills_map[skill] = {
+                        "id": f"s_{len(skills_map) + 1}",
+                        "label": "Skill",
+                        "properties": {
+                            "name": skill
+                        }
+                    }
+
+                # 2. 统计边的权重 (岗位 -> 技能)
+                edge_key = (job_name, skill)
+                edge_counter[edge_key] += 1
+
+    # 3. 统计招聘边权重 (公司 -> 岗位)
+    if company_name and company_name != 'nan':
+
+        recruit_key = (company_name, job_name)
+        recruit_counter[recruit_key] += 1
 
 # ==========================================
-# 步骤 4: 构建关系边
+# 步骤 4: 关系构建 - 计算权重与掌握情况
 # ==========================================
-print("[4/5] 构建关系边...")
+print("步骤 4: 正在计算边的属性...")
+
+relationships = []
 
 
 def get_proficiency(weight):
-    if weight >= 5:
-        return "精通"
-    elif weight >= 2:
+    """根据权重定义掌握情况"""
+    if weight < 3:
+        return "了解"
+    elif weight < 10:
         return "熟悉"
     else:
-        return "了解"
+        return "精通"
 
 
-relationships = []
 for (job_name, skill_name), weight in edge_counter.items():
+    # 获取对应的 ID
+    source_id = jobs_map[job_name]['id']
+    target_id = skills_map[skill_name]['id']
+
+    # 计算掌握情况
+    proficiency = get_proficiency(weight)
+
     relationships.append({
-        "source": jobs_map[job_name]['id'],
-        "target": skills_map[skill_name]['id'],
-        "label": "REQUIRES",
+        "source": source_id,
+        "target": target_id,
+        "label": "REQUIRES",  # 边的类型
         "properties": {
             "weight": weight,
-            "proficiency": get_proficiency(weight)
+            "proficiency": proficiency
         }
     })
 
-# ==========================================
-# 步骤 5: 组装并输出 JSON
-# ==========================================
-print("[5/5] 保存图谱...")
+# RECRUITS 边构建
+for (company_name, job_name), weight in recruit_counter.items():
+    source_id = companies_map[company_name]['id']
+    target_id = jobs_map[job_name]['id']
+    relationships.append({
+        "source": source_id,
+        "target": target_id,
+        "label": "RECRUITS",
+        "properties": {
+            "weight": weight
+        }
+    })
 
-all_nodes = list(jobs_map.values()) + list(skills_map.values())
-graph_data = {"nodes": all_nodes, "edges": relationships}
+print("步骤 5: 正在组装 JSON 并保存...")
 
-with open('knowledge_graph.json', 'w', encoding='utf-8') as f:
-    json.dump(graph_data, f, ensure_ascii=False, indent=2)
+# 将所有节点放入一个列表
+all_nodes = list(jobs_map.values()) + list(skills_map.values()) + list(companies_map.values())
 
-print(f"[完成] 岗位: {len(jobs_map)} | 技能: {len(skills_map)} | 关系: {len(relationships)}")
+# 最终的数据结构
+graph_data = {
+    "nodes": all_nodes,
+    "edges": relationships
+}
+
+# 保存为 JSON 文件
+output_file = 'knowledge_graph.json'
+with open(output_file, 'w', encoding='utf-8') as f:
+    json.dump(graph_data, f, ensure_ascii=False, indent=4)
+
+print(f"[OK] File saved as {output_file}")
+print(f"[Stats] {len(companies_map)} companies, {len(jobs_map)} roles, {len(skills_map)} skills, {len(relationships)} edges.")
+
+# --- 打印预览 ---
+# print(json.dumps(graph_data, ensure_ascii=False, indent=4))
